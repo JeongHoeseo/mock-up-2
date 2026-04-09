@@ -1,0 +1,19 @@
+// whisper_result_mock.json
+{
+  "task_id": "abc-123",
+  "status": "processing", // upload -> stt -> llm -> visual -> complete
+  "segments": [
+    {
+      "start": 0.5,
+      "end": 3.2,
+      "original_text": "안녕하새요 데이터 전처니 중입니다.",
+      "corrected_text": "안녕하세요. 데이터 전처리 중입니다."
+    },
+    {
+      "start": 3.5,
+      "end": 7.1,
+      "original_text": "위스퍼 라지 v3 모델을 사용했어오.",
+      "corrected_text": "Whisper Large-v3 모델을 사용했어요."
+    }
+  ]
+}
