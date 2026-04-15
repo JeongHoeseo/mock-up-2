@@ -16,7 +16,7 @@ function Player({ url, onDuration, onProgress, playerRef }) {
   const [isDragging, setIsDragging] = useState(false);
   const [showControls, setShowControls] = useState(true);
 
-  // 컨트롤러 자동 숨김 (재생 중일 때만)
+  // 컨트롤러 자동 숨김
   useEffect(() => {
     let timer;
     if (playing && showControls && !isDragging) {
@@ -44,21 +44,16 @@ function Player({ url, onDuration, onProgress, playerRef }) {
 
   const handleFullscreen = () => {
     const el = document.querySelector('.player-wrapper');
-    if (el.requestFullscreen) {
-      el.requestFullscreen();
-    } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen();
-    }
+    if (el.requestFullscreen) el.requestFullscreen();
   };
 
   return (
     <div 
-      className="player-wrapper group relative flex flex-col w-full h-full bg-black rounded-3xl overflow-hidden shadow-2xl"
+      className="player-wrapper group/main relative flex flex-col w-full h-full bg-black rounded-3xl shadow-2xl"
       onMouseMove={() => setShowControls(true)}
-      onMouseLeave={() => playing && setShowControls(false)}
     >
-      {/* 1. 영상 재생 영역 */}
-      <div className="relative w-full h-full flex items-center justify-center"> 
+      {/* 1. 영상 재생 영역 (overflow-hidden은 여기서 처리하여 메뉴가 안 잘리게 함) */}
+      <div className="relative w-full h-full flex items-center justify-center rounded-3xl overflow-hidden"> 
         <ReactPlayer
           ref={playerRef}
           url={url}
@@ -83,28 +78,19 @@ function Player({ url, onDuration, onProgress, playerRef }) {
         />
       </div>
 
-      {/* 2. 유튜브 스타일 투명 컨트롤러 */}
-      <div className={`absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-500 ${showControls || isDragging ? 'opacity-100' : 'opacity-0'}`}>
+      {/* 2. 유튜브 스타일 투명 컨트롤러 (z-index 확보) */}
+      <div className={`absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity duration-500 z-30 ${showControls || isDragging ? 'opacity-100' : 'opacity-0'}`}>
         
-        {/* 드래그 가능한 재생바 */}
+        {/* 재생바 영역 */}
         <div 
           className="relative w-full h-1.5 bg-white/20 rounded-full mb-4 cursor-pointer group/bar"
           onMouseDown={() => setIsDragging(true)}
           onMouseMove={handleDragSeek}
-          onMouseUp={() => { 
-            setIsDragging(false); 
-            playerRef.current.seekTo(played); 
-          }}
+          onMouseUp={() => { setIsDragging(false); playerRef.current.seekTo(played); }}
           onClick={handleDragSeek}
         >
-          <div 
-            className="absolute top-0 left-0 h-full bg-brand-purple rounded-full shadow-[0_0_15px_#7C3AED]" 
-            style={{ width: `${played * 100}%` }} 
-          />
-          <div 
-            className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg transition-transform ${isDragging ? 'scale-125' : 'scale-0 group-hover/bar:scale-100'}`}
-            style={{ left: `calc(${played * 100}% - 8px)` }}
-          />
+          <div className="absolute top-0 left-0 h-full bg-brand-purple rounded-full shadow-[0_0_15px_#7C3AED]" style={{ width: `${played * 100}%` }} />
+          <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg transition-transform ${isDragging ? 'scale-125' : 'scale-0 group-hover/bar:scale-100'}`} style={{ left: `calc(${played * 100}% - 8px)` }} />
         </div>
 
         {/* 조작 버튼 영역 */}
@@ -113,39 +99,28 @@ function Player({ url, onDuration, onProgress, playerRef }) {
             <button onClick={() => setPlaying(!playing)} className="hover:scale-110 transition-transform active:scale-95">
               {playing ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" />}
             </button>
-            <button onClick={() => playerRef.current.seekTo(0)} className="opacity-80 hover:opacity-100 transition-opacity">
-              <RotateCcw size={22} />
-            </button>
+            <button onClick={() => playerRef.current.seekTo(0)} className="opacity-80 hover:opacity-100"><RotateCcw size={22} /></button>
 
-            <div className="flex items-center gap-3 group/volume">
-              <button onClick={() => setMuted(!muted)} className="hover:text-brand-purple transition-colors">
-                {muted || volume === 0 ? <VolumeX size={22} /> : volume < 0.5 ? <Volume1 size={22} /> : <Volume2 size={22} />}
-              </button>
+            <div className="flex items-center gap-3 group/vol">
+              <button onClick={() => setMuted(!muted)}>{muted || volume === 0 ? <VolumeX size={22} /> : <Volume2 size={22} />}</button>
               <input 
                 type="range" min="0" max="1" step="0.1" value={muted ? 0 : volume}
-                onChange={(e) => {
-                  setVolume(parseFloat(e.target.value));
-                  setMuted(false);
-                }}
-                className="w-0 group-hover/volume:w-20 transition-all accent-brand-purple cursor-pointer"
+                onChange={(e) => { setVolume(parseFloat(e.target.value)); setMuted(false); }}
+                className="w-0 group-hover/vol:w-20 transition-all accent-brand-purple cursor-pointer"
               />
-              <span className="text-[13px] font-medium font-mono ml-1">
-                {formatTime(playedSeconds)} <span className="mx-1 opacity-50">/</span> {formatTime(duration)}
-              </span>
+              <span className="text-[13px] font-mono ml-1">{formatTime(playedSeconds)} / {formatTime(duration)}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            {/* 배속 메뉴 (버그 수정 완료) */}
-            <div className="relative group/speed py-2">
-              <button className="flex items-center gap-1.5 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-all border border-white/5">
+            {/* 배속 메뉴 수정 부분 */}
+            <div className="relative py-2 group">
+              <button className="flex items-center gap-1.5 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-all">
                 <Clock3 size={16} /> {playbackRate === 1.0 ? 'Normal' : `${playbackRate}x`}
               </button>
               
-              {/* Invisible Bridge: after 요소를 통해 마우스 경로 확보 */}
-              <div className="absolute bottom-[115%] left-1/2 -translate-x-1/2 bg-[#161927] border border-white/10 rounded-xl hidden group-hover:speed:block overflow-hidden shadow-2xl z-50 min-w-[90px] animate-in fade-in slide-in-from-bottom-2
-                after:content-[''] after:absolute after:top-full after:left-0 after:w-full after:h-4">
-                
+              {/* 메뉴창: group-hover 시 block 처리 (슬래시 제외한 기본 group 사용) */}
+              <div className="absolute bottom-[100%] left-1/2 -translate-x-1/2 mb-2 bg-[#1C1F2E] border border-white/10 rounded-xl hidden group-hover:block overflow-hidden shadow-2xl z-[100] min-w-[90px] after:content-[''] after:absolute after:top-full after:left-0 after:w-full after:h-4">
                 {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(rate => (
                   <button 
                     key={rate} 
@@ -160,9 +135,7 @@ function Player({ url, onDuration, onProgress, playerRef }) {
               </div>
             </div>
 
-            <button onClick={handleFullscreen} className="hover:scale-110 transition-transform active:scale-95">
-              <Maximize size={22} />
-            </button>
+            <button onClick={handleFullscreen} className="hover:scale-110 transition-transform"><Maximize size={22} /></button>
           </div>
         </div>
       </div>
