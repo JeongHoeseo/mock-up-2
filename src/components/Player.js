@@ -7,7 +7,7 @@ function Player({ url }) {
   const [playing, setPlaying] = useState(false);
   const [played, setPlayed] = useState(0);      // 진행 비율 (0 ~ 1)
   const [playedSeconds, setPlayedSeconds] = useState(0); // 실제 재생 시간(초)
-  const [duration, setDuration] = useState(0);  // 실제 총 길이(초)
+  const [duration, setDuration] = useState(0);  // 실제 총 길이(초) -> 초기값 0
   const [muted, setMuted] = useState(false);
 
   // 시간 포맷 변환 (27:52 처럼 표시)
@@ -17,16 +17,17 @@ function Player({ url }) {
     const hh = date.getUTCHours();
     const mm = date.getUTCMinutes();
     const ss = String(date.getUTCSeconds()).padStart(2, '0');
+    // 1시간 넘을 경우 HH:MM:SS, 아니면 MM:SS
     if (hh > 0) {
       return `${hh}:${String(mm).padStart(2, '0')}:${ss}`;
     }
     return `${mm}:${ss}`;
   };
 
-  // 영상의 실제 총 길이를 감지했을 때 실행
+  // [핵심 수정] 영상의 실제 총 길이를 감지했을 때 실행되는 핸들러
   const handleDuration = (d) => {
-    console.log('Detected duration:', d);
-    setDuration(d);
+    console.log('Detected actual duration:', d);
+    setDuration(d); // 받아온 진짜 길이를 상태값에 저장
   };
 
   // 재생바 클릭 시 이동 (Seek)
@@ -39,7 +40,8 @@ function Player({ url }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-full bg-black rounded-3xl border border-gray-800/50 overflow-hidden shadow-2xl">
+    <div className="flex flex-col w-full h-full bg-black rounded-3xl border border-gray-800/50 overflow-hidden shadow-2xl relative z-10">
+      {/* 1. 영상 재생 영역 */}
       <div className="relative flex-1 bg-black min-h-0"> 
         <ReactPlayer
           ref={playerRef}
@@ -48,37 +50,39 @@ function Player({ url }) {
           height="100%"
           playing={playing}
           muted={muted}
-          // 영상 진행 상황 감지
+          // 영상 진행 상황 감지 (현재 시간 업데이트)
           onProgress={(s) => {
             setPlayed(s.played);
             setPlayedSeconds(s.playedSeconds);
           }}
-          // 핵심: 영상 총 길이를 여기서 받아옴
+          // [핵심 수정] 영상 총 길이를 여기서 받아옴
           onDuration={handleDuration}
           style={{ position: 'absolute', top: 0, left: 0 }}
           config={{ file: { attributes: { style: { objectFit: 'contain' } } } }}
         />
       </div>
 
+      {/* 2. 재생 바 인터페이스 (그대로 유지하며 로직만 수정) */}
       <div className="bg-[#1C1F2E] px-6 py-4 flex flex-col gap-3 shrink-0">
         {/* 프로그레스 바: played 비율에 따라 정확히 이동 */}
         <div className="relative w-full h-1.5 bg-gray-700 rounded-full group cursor-pointer" onClick={handleSeek}>
           <div 
             className="absolute top-0 left-0 h-full bg-brand-purple rounded-full shadow-[0_0_12px_#7C3AED]" 
-            style={{ width: `${(played * 100).toFixed(2)}%` }} 
+            style={{ width: `${(played * 100).toFixed(2)}%` }} // 비율에 맞게 너비 조절
           />
         </div>
 
+        {/* 조작 버튼 및 시간 표시 */}
         <div className="flex items-center justify-between text-gray-400">
           <div className="flex items-center gap-5">
-            <button onClick={() => setPlaying(!playing)} className="text-white">
+            <button onClick={() => setPlaying(!playing)} className="text-white hover:text-brand-purple transition-colors">
               {playing ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
             </button>
             <button onClick={() => playerRef.current.seekTo(0)} className="hover:text-white"><RotateCcw size={20} /></button>
             
             <div className="flex items-center gap-3 ml-2">
               <button onClick={() => setMuted(!muted)}>{muted ? <VolumeX size={20} className="text-red-500" /> : <Volume2 size={20} />}</button>
-              {/* 버그 수정: 실제 진행 시간 / 실제 총 길이 표기 */}
+              {/* [버그 수정본] 실제 진행 시간 / 실제 총 길이 표기 */}
               <span className="text-[11px] font-mono text-gray-500">
                 {formatTime(playedSeconds)} / {formatTime(duration)}
               </span>
