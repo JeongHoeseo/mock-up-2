@@ -24,11 +24,14 @@ function Player({ url, onDuration, onProgress, playerRef }) {
     return () => clearTimeout(timer);
   }, [playing, showControls, isDragging]);
 
+  // --- [수정] 시간 포맷: 항상 HH:MM:SS 로 표시 ---
   const formatTime = (seconds) => {
-    if (isNaN(seconds)) return "00:00";
-    const mm = Math.floor(seconds / 60);
-    const ss = String(Math.floor(seconds % 60)).padStart(2, '0');
-    return `${mm}:${ss}`;
+    if (isNaN(seconds)) return "00:00:00";
+    const date = new Date(seconds * 1000);
+    const hh = String(date.getUTCHours()).padStart(2, '0');
+    const mm = String(date.getUTCMinutes()).padStart(2, '0');
+    const ss = String(date.getUTCSeconds()).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
   };
 
   const handleDragSeek = (e) => {
@@ -96,25 +99,33 @@ function Player({ url, onDuration, onProgress, playerRef }) {
             </button>
             <button onClick={() => playerRef.current.seekTo(0)} className="opacity-80 hover:opacity-100 transition-opacity"><RotateCcw size={22} /></button>
 
-            <div className="flex items-center gap-3 group/vol">
-              <button onClick={() => setMuted(!muted)}>{muted || volume === 0 ? <VolumeX size={22} /> : <Volume2 size={22} />}</button>
-              <input 
-                type="range" min="0" max="1" step="0.1" value={muted ? 0 : volume}
-                onChange={(e) => { setVolume(parseFloat(e.target.value)); setMuted(false); }}
-                className="w-0 group-hover/vol:w-20 transition-all accent-brand-purple cursor-pointer"
-              />
-              <span className="text-[13px] font-mono ml-1">{formatTime(playedSeconds)} / {formatTime(duration)}</span>
+            {/* --- [수정] 음량 조절: 호버 시에만 슬라이더 노출 --- */}
+            <div className="flex items-center gap-0 group/vol relative">
+              <button onClick={() => setMuted(!muted)} className="hover:text-brand-purple transition-colors pr-2">
+                {muted || volume === 0 ? <VolumeX size={22} /> : <Volume2 size={22} />}
+              </button>
+              
+              <div className="w-0 overflow-hidden group-hover/vol:w-24 transition-all duration-300 ease-in-out flex items-center">
+                <input 
+                  type="range" min="0" max="1" step="0.05" value={muted ? 0 : volume}
+                  onChange={(e) => { setVolume(parseFloat(e.target.value)); setMuted(false); }}
+                  className="w-20 h-1 bg-gray-700 rounded-full appearance-none cursor-pointer accent-brand-purple"
+                />
+              </div>
+              
+              {/* 시간 표시: HH:MM:SS 적용 */}
+              <span className="text-[13px] font-mono ml-3 opacity-90 tracking-tight">
+                {formatTime(playedSeconds)} <span className="mx-1 text-gray-500">/</span> {formatTime(duration)}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            {/* --- 배속 메뉴 수정 영역 --- */}
-            <div className="relative group p-1"> {/* p-1로 감지 영역 확보 */}
+            <div className="relative group p-1">
               <button className="flex items-center gap-1.5 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-all">
                 <Clock3 size={16} /> {playbackRate === 1.0 ? 'Normal' : `${playbackRate}x`}
               </button>
               
-              {/* 메뉴창: bottom 포지션을 조절하고 after 가상 요소를 더 넓게 배치 */}
               <div className="absolute bottom-[90%] left-1/2 -translate-x-1/2 pb-4 hidden group-hover:block z-[100] min-w-[100px]">
                 <div className="bg-[#1C1F2E] border border-white/10 rounded-xl overflow-hidden shadow-2xl">
                   {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(rate => (
@@ -132,7 +143,6 @@ function Player({ url, onDuration, onProgress, playerRef }) {
                     </button>
                   ))}
                 </div>
-                {/* 마우스가 이동할 수 있는 보이지 않는 가교 */}
                 <div className="absolute top-full left-0 w-full h-6 bg-transparent" />
               </div>
             </div>
