@@ -16,7 +16,6 @@ function Player({ url, onDuration, onProgress, playerRef }) {
   const [isDragging, setIsDragging] = useState(false);
   const [showControls, setShowControls] = useState(true);
 
-  // 컨트롤러 자동 숨김
   useEffect(() => {
     let timer;
     if (playing && showControls && !isDragging) {
@@ -52,7 +51,6 @@ function Player({ url, onDuration, onProgress, playerRef }) {
       className="player-wrapper group/main relative flex flex-col w-full h-full bg-black rounded-3xl shadow-2xl"
       onMouseMove={() => setShowControls(true)}
     >
-      {/* 1. 영상 재생 영역 (overflow-hidden은 여기서 처리하여 메뉴가 안 잘리게 함) */}
       <div className="relative w-full h-full flex items-center justify-center rounded-3xl overflow-hidden"> 
         <ReactPlayer
           ref={playerRef}
@@ -78,10 +76,8 @@ function Player({ url, onDuration, onProgress, playerRef }) {
         />
       </div>
 
-      {/* 2. 유튜브 스타일 투명 컨트롤러 (z-index 확보) */}
-      <div className={`absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity duration-500 z-30 ${showControls || isDragging ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/95 via-black/40 to-transparent transition-opacity duration-500 z-30 ${showControls || isDragging ? 'opacity-100' : 'opacity-0'}`}>
         
-        {/* 재생바 영역 */}
         <div 
           className="relative w-full h-1.5 bg-white/20 rounded-full mb-4 cursor-pointer group/bar"
           onMouseDown={() => setIsDragging(true)}
@@ -93,13 +89,12 @@ function Player({ url, onDuration, onProgress, playerRef }) {
           <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg transition-transform ${isDragging ? 'scale-125' : 'scale-0 group-hover/bar:scale-100'}`} style={{ left: `calc(${played * 100}% - 8px)` }} />
         </div>
 
-        {/* 조작 버튼 영역 */}
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center gap-6">
             <button onClick={() => setPlaying(!playing)} className="hover:scale-110 transition-transform active:scale-95">
               {playing ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" />}
             </button>
-            <button onClick={() => playerRef.current.seekTo(0)} className="opacity-80 hover:opacity-100"><RotateCcw size={22} /></button>
+            <button onClick={() => playerRef.current.seekTo(0)} className="opacity-80 hover:opacity-100 transition-opacity"><RotateCcw size={22} /></button>
 
             <div className="flex items-center gap-3 group/vol">
               <button onClick={() => setMuted(!muted)}>{muted || volume === 0 ? <VolumeX size={22} /> : <Volume2 size={22} />}</button>
@@ -113,25 +108,32 @@ function Player({ url, onDuration, onProgress, playerRef }) {
           </div>
 
           <div className="flex items-center gap-6">
-            {/* 배속 메뉴 수정 부분 */}
-            <div className="relative py-2 group">
+            {/* --- 배속 메뉴 수정 영역 --- */}
+            <div className="relative group p-1"> {/* p-1로 감지 영역 확보 */}
               <button className="flex items-center gap-1.5 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-all">
                 <Clock3 size={16} /> {playbackRate === 1.0 ? 'Normal' : `${playbackRate}x`}
               </button>
               
-              {/* 메뉴창: group-hover 시 block 처리 (슬래시 제외한 기본 group 사용) */}
-              <div className="absolute bottom-[100%] left-1/2 -translate-x-1/2 mb-2 bg-[#1C1F2E] border border-white/10 rounded-xl hidden group-hover:block overflow-hidden shadow-2xl z-[100] min-w-[90px] after:content-[''] after:absolute after:top-full after:left-0 after:w-full after:h-4">
-                {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(rate => (
-                  <button 
-                    key={rate} 
-                    onClick={() => setPlaybackRate(rate)} 
-                    className={`block w-full px-4 py-2.5 text-[11px] font-medium transition-colors border-b border-white/5 last:border-0
-                      ${playbackRate === rate ? 'bg-brand-purple text-white' : 'hover:bg-white/10 text-gray-300'}
-                    `}
-                  >
-                    {rate === 1.0 ? 'Normal' : `${rate}x`}
-                  </button>
-                ))}
+              {/* 메뉴창: bottom 포지션을 조절하고 after 가상 요소를 더 넓게 배치 */}
+              <div className="absolute bottom-[90%] left-1/2 -translate-x-1/2 pb-4 hidden group-hover:block z-[100] min-w-[100px]">
+                <div className="bg-[#1C1F2E] border border-white/10 rounded-xl overflow-hidden shadow-2xl">
+                  {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(rate => (
+                    <button 
+                      key={rate} 
+                      onClick={() => {
+                        setPlaybackRate(rate);
+                        setShowControls(true);
+                      }} 
+                      className={`block w-full px-4 py-2.5 text-[11px] font-medium transition-colors border-b border-white/5 last:border-0
+                        ${playbackRate === rate ? 'bg-brand-purple text-white' : 'hover:bg-white/10 text-gray-300'}
+                      `}
+                    >
+                      {rate === 1.0 ? 'Normal' : `${rate}x`}
+                    </button>
+                  ))}
+                </div>
+                {/* 마우스가 이동할 수 있는 보이지 않는 가교 */}
+                <div className="absolute top-full left-0 w-full h-6 bg-transparent" />
               </div>
             </div>
 
