@@ -1,11 +1,11 @@
 import React from 'react';
-import { Sparkles, History } from 'lucide-react';
+import { Sparkles, History, CheckCircle2 } from 'lucide-react';
 
 const Editor = ({ segments, onUpdate, isDark }) => {
   return (
     <div className={`h-full flex flex-col transition-colors duration-300 ${isDark ? 'bg-[#161927]' : 'bg-white'}`}>
       
-      {/* 1. 상단 헤더: 두 번째 사진처럼 아주 슬림하게 */}
+      {/* 1. 상단 헤더: 시안의 슬림한 사이즈 유지 */}
       <div className={`px-5 py-4 border-b transition-colors ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -23,19 +23,19 @@ const Editor = ({ segments, onUpdate, isDark }) => {
         </div>
       </div>
 
-      {/* 2. 자막 리스트: 두 번째 사진의 촘촘한 간격과 컴팩트한 카드 사이즈 */}
+      {/* 2. 자막 리스트: [수정 핵심] STT 영역 삭제 및 컴팩트 레이아웃 + 휠 스크롤 */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
         {segments && segments.map((seg) => (
           <div 
             key={seg.id} 
             className={`rounded-xl p-4 border transition-all ${
               isDark 
-                ? 'bg-[#1C2030] border-gray-800/30' 
-                : 'bg-white border-gray-100'
+                ? 'bg-[#1C2030] border-gray-800/30 hover:border-brand-purple/50' 
+                : 'bg-white border-gray-100 hover:border-brand-purple/30'
             }`}
           >
-            {/* 타임스탬프: 작고 슬림하게 */}
-            <div className="flex justify-between items-center mb-2.5">
+            {/* 타임스탬프: 작고 컴팩트하게 */}
+            <div className="flex justify-between items-center mb-3">
               <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border font-mono tracking-tighter ${
                 isDark 
                   ? 'bg-gray-900/80 text-brand-purple-light border-brand-purple/20' 
@@ -43,39 +43,30 @@ const Editor = ({ segments, onUpdate, isDark }) => {
               }`}>
                 {seg.start}s - {seg.end}s
               </span>
+              <CheckCircle2 size={14} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             
-            <div className="space-y-2.5">
-              {/* ORIGINAL STT */}
-              <div>
-                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest block mb-0.5">ORIGINAL STT</span>
-                <p className={`text-[11px] italic font-medium leading-tight ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {seg.text}
-                </p>
-              </div>
-
-              {/* CORRECTED AI: 슬림한 텍스트박스 */}
-              <div className="relative">
-                <span className="text-[8px] font-bold text-brand-purple uppercase tracking-widest block mb-1">CORRECTED AI</span>
-                <textarea
-                  className={`w-full border rounded-lg p-3 text-[12px] focus:outline-none focus:border-brand-purple transition-all resize-none leading-snug ${
-                    isDark 
-                      ? 'bg-[#0F111A]/80 border-gray-800/50 text-gray-200' 
-                      : 'bg-gray-50 border-gray-200 text-gray-800'
-                  }`}
-                  rows={2} // 딱 2줄로 슬림하게 고정
-                  value={seg.corrected}
-                  onChange={(e) => onUpdate(seg.id, e.target.value)}
-                />
-              </div>
+            {/* 자막 입력 영역: STT 삭제하고 CORRECTED AI 라벨도 지워 시안처럼 깔끔하게 */}
+            <div className="relative">
+              <textarea
+                className={`w-full border rounded-lg p-3 text-[12px] focus:outline-none focus:border-brand-purple transition-all resize-none leading-snug ${
+                  isDark 
+                    ? 'bg-[#0F111A]/80 border-gray-800/50 text-gray-200' 
+                    : 'bg-gray-50 border-gray-200 text-gray-800'
+                }`}
+                rows={2} // 두 줄 고정
+                value={seg.corrected}
+                onChange={(e) => onUpdate(seg.id, e.target.value)}
+                placeholder="자막을 입력하세요..."
+              />
             </div>
           </div>
         ))}
       </div>
 
-      {/* 3. 하단 버튼: 컴팩트한 하단 고정 버튼 */}
+      {/* 3. 하단 버튼: 시안의 컴팩트한 디자인 */}
       <div className={`p-4 border-t ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
-        <button className="w-full bg-brand-purple hover:bg-brand-purple-light text-white py-3 rounded-xl font-bold transition-all text-[11px] uppercase tracking-widest">
+        <button className="w-full bg-brand-purple hover:bg-brand-purple-light text-white py-3 rounded-xl font-bold transition-all text-[11px] uppercase tracking-widest shadow-md shadow-brand-purple/20">
           최종 자막 적용 및 다운로드
         </button>
       </div>
