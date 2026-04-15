@@ -9,7 +9,7 @@ function Player({ url }) {
   const [playedSeconds, setPlayedSeconds] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
-  const [volume, setVolume] = useState(0.8); // 기본 볼륨 80%
+  const [volume, setVolume] = useState(0.8);
 
   const formatTime = (seconds) => {
     if (isNaN(seconds)) return "00:00";
@@ -21,7 +21,6 @@ function Player({ url }) {
     return `${mm}:${ss}`;
   };
 
-  // 볼륨 아이콘 동적 변경 로직
   const getVolumeIcon = () => {
     if (muted || volume === 0) return <VolumeX size={20} className="text-red-500" />;
     if (volume < 0.5) return <Volume1 size={20} />;
@@ -37,8 +36,11 @@ function Player({ url }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-full bg-black rounded-3xl border border-gray-800/50 overflow-hidden shadow-2xl">
-      <div className="relative flex-1 bg-black min-h-0"> 
+    // h-full과 flex-col을 사용하여 전체 높이를 자식들이 나누어 갖게 함
+    <div className="flex flex-col w-full h-full bg-[#0F111A] rounded-3xl border border-gray-800/50 overflow-hidden shadow-2xl">
+      
+      {/* 1. 영상 재생 영역: flex-1을 주어 남는 상단 공간을 모두 차지 */}
+      <div className="relative flex-1 bg-black overflow-hidden flex items-center justify-center"> 
         <ReactPlayer
           ref={playerRef}
           url={url}
@@ -46,7 +48,7 @@ function Player({ url }) {
           height="100%"
           playing={playing}
           muted={muted}
-          volume={volume} // 볼륨 상태 연결
+          volume={volume}
           onProgress={(s) => {
             setPlayed(s.played);
             setPlayedSeconds(s.playedSeconds);
@@ -57,41 +59,41 @@ function Player({ url }) {
         />
       </div>
 
-      <div className="bg-[#1C1F2E] px-6 py-4 flex flex-col gap-3 shrink-0 border-t border-gray-800/30">
+      {/* 2. 하단 컨트롤러 바: shrink-0으로 높이를 고정하여 영상 영역을 절대 침범하지 못하게 함 */}
+      <div className="bg-[#1C1F2E] px-6 py-4 flex flex-col gap-3 shrink-0 border-t border-gray-800/50 z-10">
+        
         {/* 재생 바 */}
         <div className="relative w-full h-1.5 bg-gray-700 rounded-full group cursor-pointer" onClick={handleSeek}>
-          <div className="absolute top-0 left-0 h-full bg-brand-purple rounded-full shadow-[0_0_12px_#7C3AED]" style={{ width: `${(played * 100).toFixed(2)}%` }} />
+          <div 
+            className="absolute top-0 left-0 h-full bg-brand-purple rounded-full shadow-[0_0_12px_#7C3AED]" 
+            style={{ width: `${(played * 100).toFixed(2)}%` }} 
+          />
+          <div 
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-2 border-brand-purple opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ left: `calc(${(played * 100).toFixed(2)}% - 6px)` }}
+          />
         </div>
 
+        {/* 컨트롤 버튼들 */}
         <div className="flex items-center justify-between text-gray-400">
           <div className="flex items-center gap-5">
             <button onClick={() => setPlaying(!playing)} className="text-white hover:text-brand-purple transition-colors">
               {playing ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
             </button>
-            <button onClick={() => playerRef.current.seekTo(0)} className="hover:text-white transition-colors"><RotateCcw size={20} /></button>
+            <button onClick={() => playerRef.current.seekTo(0)} className="hover:text-white"><RotateCcw size={20} /></button>
 
-            {/* 볼륨 컨트롤 영역 */}
             <div className="flex items-center gap-3 ml-2 group/volume">
-              <button onClick={() => setMuted(!muted)} className="hover:text-white transition-colors">
+              <button onClick={() => setMuted(!muted)} className="hover:text-white">
                 {getVolumeIcon()}
               </button>
-              
-              {/* 볼륨 슬라이더: 평소엔 작게, 호버 시 명확하게 표시 */}
               <input 
-                type="range" 
-                min="0" 
-                max="1" 
-                step="0.05" 
+                type="range" min="0" max="1" step="0.05" 
                 value={muted ? 0 : volume} 
-                onChange={(e) => {
-                  setVolume(parseFloat(e.target.value));
-                  setMuted(false);
-                }}
-                className="w-16 h-1 bg-gray-700 rounded-full appearance-none cursor-pointer accent-brand-purple hover:w-20 transition-all"
+                onChange={(e) => { setVolume(parseFloat(e.target.value)); setMuted(false); }}
+                className="w-16 h-1 bg-gray-700 rounded-full appearance-none cursor-pointer accent-brand-purple"
               />
-              
               <span className="text-[11px] font-mono tracking-tighter">
-                {formatTime(playedSeconds)} <span className="mx-1 text-gray-600">/</span> {formatTime(duration)}
+                {formatTime(playedSeconds)} / {formatTime(duration)}
               </span>
             </div>
           </div>
@@ -100,7 +102,7 @@ function Player({ url }) {
             <button className="flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 bg-gray-800 rounded hover:text-white transition-colors">
               <Clock3 size={14} /> 1.0x
             </button>
-            <button className="hover:text-white transition-colors"><Maximize size={20} /></button>
+            <button className="hover:text-white"><Maximize size={20} /></button>
           </div>
         </div>
       </div>
