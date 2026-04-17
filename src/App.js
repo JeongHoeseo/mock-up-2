@@ -29,26 +29,38 @@ function App() {
     if (data?.segments) setLocalSegments(data.segments);
   }, [data]);
 
-  // [핵심] 실제 서버 업로드 핸들러
   const handleStartAI = async () => {
-    if (!videoFile) return;
+  if (!videoFile) return;
 
-    try {
-      const formData = new FormData();
-      formData.append('video', videoFile);
+  // 1. 주소값 체크 (디버깅용)
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log("현재 API 주소:", baseUrl);
 
-      // 1. 서버에 파일 업로드
-      const uploadRes = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      
-      // 2. 업로드 완료 후 받은 서버 ID 저장 (useProcessing 트리거)
-      setServerFileId(uploadRes.data.file_id);
-    } catch (err) {
-      console.error("서버 전송 실패:", err);
-      alert("영상 업로드 중 오류가 발생했습니다.");
+  if (!baseUrl || baseUrl === "undefined") {
+    alert("API 주소가 설정되지 않았습니다. 환경 변수를 확인하세요.");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('video', videoFile);
+
+    // 2. 요청 보내기
+    // 끝에 슬래시(/) 처리가 중복되지 않게 조심하세요.
+    const uploadRes = await axios.post(`${baseUrl.replace(/\/$/, "")}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    
+    setServerFileId(uploadRes.data.file_id);
+  } catch (err) {
+    console.error("서버 전송 실패:", err);
+    // 에러 발생 시 서버가 보내준 상세 메시지 확인
+    if (err.response) {
+      console.log("에러 상태:", err.response.status);
+      console.log("에러 데이터:", err.response.data);
     }
-  };
+  }
+};
 
   const theme = {
     bg: isDark ? "bg-[#0A0C14]" : "bg-[#F8FAFC]",
