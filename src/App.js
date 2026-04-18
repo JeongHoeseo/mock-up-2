@@ -52,7 +52,7 @@ function App() {
 
   const handleStartAI = async () => {
     if (!videoFile) return;
-    const baseUrl = process.env.REACT_APP_API_BASE_URL;
+    const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
     if (!rawBaseUrl || rawBaseUrl === "undefined") {
       alert("Vercel 환경 변수가 설정되지 않았습니다.");
       return;
