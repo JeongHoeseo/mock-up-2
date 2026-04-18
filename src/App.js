@@ -21,7 +21,7 @@ import Status from './components/Status';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// [보존] 원본 환경 변수 로직
+// [보존] 원본 환경 변수 로직 - 절대 수정하지 않음
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
   'https://relay-resulting-turning-mathematical.trycloudflare.com';
@@ -65,8 +65,10 @@ function App() {
     if (polling && jobStatus.jobId) {
       timer = setInterval(async () => {
         try {
+          // [수정] URL 끝 슬래시 중복 방지 로직만 적용
+          const baseUrl = API_BASE_URL.replace(/\/$/, '');
           const res = await axios.get(
-            `${API_BASE_URL}/status/${jobStatus.jobId}`
+            `${baseUrl}/status/${jobStatus.jobId}`
           );
           const { status, step, message, result } = res.data;
 
@@ -122,9 +124,11 @@ function App() {
       setJobStatus({ ...initialJobStatus, status: 'UPLOADING' });
       const formData = new FormData();
       formData.append('video', videoFile);
-      formData.append('domain', internalDomain); // 매핑된 도메인 전송
+      formData.append('domain', internalDomain);
 
-      const uploadRes = await axios.post(`${API_BASE_URL}/process`, formData, {
+      // [핵심 수정] 백엔드 주소 끝에 슬래시가 있어도 통신이 가능하게 조치
+      const baseUrl = API_BASE_URL.replace(/\/$/, '');
+      const uploadRes = await axios.post(`${baseUrl}/process`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -144,7 +148,7 @@ function App() {
     }
   };
 
-  // [보존] 원본 테마 설정
+  // [보존] 원본 테마 설정 - 가시성 유지
   const theme = {
     bg: isDark ? 'bg-[#0A0C14]' : 'bg-[#F8FAFC]',
     sidebar: isDark
@@ -377,7 +381,7 @@ function App() {
                     onDuration={setDuration}
                     onProgress={setPlayed}
                     playerRef={playerRef}
-                    segments={localSegments} // [기능] 자막 미리보기 연결
+                    segments={localSegments}
                   />
                 </div>
               </section>
