@@ -9,6 +9,7 @@ import {
   Moon,
   Sun,
   Search,
+  X,
   FileVideo,
   Check,
   ChevronRight,
@@ -55,6 +56,7 @@ function App() {
 
   const playerRef = useRef(null);
 
+  // [보존] 원본 도메인 연결 로직 그대로 유지
   const internalDomain = subtitleType === 'formal' ? 'politics' : 'ent';
 
   useEffect(() => {
@@ -65,7 +67,7 @@ function App() {
     };
   }, [videoUrl]);
 
-  // [수정] 백엔드의 status: "done" / pipeline_result 구조에 맞춘 polling
+  // [보존] 원본 Polling 로직 그대로 유지
   useEffect(() => {
     let timer;
 
@@ -120,7 +122,6 @@ function App() {
             timings: timings || prev.timings,
           }));
 
-          // 백엔드 완료 상태: status="done", step="done"
           if (
             status === 'done' ||
             status === 'completed' ||
@@ -229,7 +230,7 @@ function App() {
 
       const formData = new FormData();
       formData.append('file', videoFile);
-      formData.append('domain', internalDomain);
+      formData.append('domain', internalDomain); // [보존] 원본 로직 유지
 
       const baseUrl = API_BASE_URL.replace(/\/$/, '');
       const uploadRes = await axios.post(
@@ -276,21 +277,17 @@ function App() {
     }
   };
 
-  const handleExport = () => {
+  // [추가] 개별 다운로드 함수
+  const handleDownloadVideo = () => {
     const videoDownloadUrl = processResult?.downloads?.video_download_url;
+    if (!videoDownloadUrl) return alert('영상 파일이 없습니다.');
+    window.open(videoDownloadUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDownloadSubtitle = () => {
     const subtitleDownloadUrl = processResult?.downloads?.subtitle_download_url;
-
-    if (videoDownloadUrl) {
-      window.open(videoDownloadUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    if (subtitleDownloadUrl) {
-      window.open(subtitleDownloadUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    alert('다운로드 가능한 결과가 아직 없습니다.');
+    if (!subtitleDownloadUrl) return alert('SRT 파일이 없습니다.');
+    window.open(subtitleDownloadUrl, '_blank', 'noopener,noreferrer');
   };
 
   const theme = {
@@ -404,17 +401,32 @@ function App() {
             AI SUBTITLE PRO
           </h1>
 
-          <button
-            disabled={!processResult}
-            onClick={handleExport}
-            className={`px-8 py-4 rounded-2xl font-bold flex items-center gap-2.5 transition-all text-sm shadow-lg ${
-              processResult
-                ? 'bg-brand-purple hover:bg-brand-purple-light text-white'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
-          >
-            <Download size={22} /> 내보내기
-          </button>
+          {/* [변경] 버튼 두 개로 분리 */}
+          <div className="flex items-center gap-3">
+            <button
+              disabled={!processResult}
+              onClick={handleDownloadVideo}
+              className={`px-6 py-4 rounded-2xl font-bold flex items-center gap-2.5 transition-all text-sm shadow-lg ${
+                processResult
+                  ? 'bg-brand-purple hover:bg-brand-purple-light text-white'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              <Download size={22} /> 영상 다운로드
+            </button>
+
+            <button
+              disabled={!processResult}
+              onClick={handleDownloadSubtitle}
+              className={`px-6 py-4 rounded-2xl font-bold flex items-center gap-2.5 transition-all text-sm shadow-lg ${
+                processResult
+                  ? 'bg-slate-800 hover:bg-slate-700 text-white'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              <Download size={22} /> SRT 다운로드
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 flex overflow-hidden min-h-0">
