@@ -9,7 +9,6 @@ import {
   Moon,
   Sun,
   Search,
-  X,
   FileVideo,
   Check,
   ChevronRight,
@@ -19,7 +18,6 @@ import Player from './components/Player';
 import Editor from './components/Editor';
 import Status from './components/Status';
 
-// [보존] 원본 환경 변수 로직 유지
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
   'https://relay-resulting-turning-mathematical.trycloudflare.com';
@@ -35,6 +33,7 @@ const initialJobStatus = {
   llmFallbackUsed: null,
   llmFallbackReason: '',
   timings: null,
+  renderEngine: 'opencv',
 };
 
 function App() {
@@ -48,6 +47,7 @@ function App() {
   const [duration, setDuration] = useState(0);
 
   const [subtitleType, setSubtitleType] = useState('formal');
+  const [renderEngine, setRenderEngine] = useState('opencv');
   const [searchTerm, setSearchTerm] = useState('');
 
   const [jobStatus, setJobStatus] = useState(initialJobStatus);
@@ -56,7 +56,6 @@ function App() {
 
   const playerRef = useRef(null);
 
-  // [보존] 원본 도메인 연결 로직 그대로 유지
   const internalDomain = subtitleType === 'formal' ? 'politics' : 'ent';
 
   useEffect(() => {
@@ -67,7 +66,6 @@ function App() {
     };
   }, [videoUrl]);
 
-  // [보존] 원본 Polling 로직 그대로 유지
   useEffect(() => {
     let timer;
 
@@ -86,6 +84,11 @@ function App() {
 
           const transcription = pipelineResult?.transcription;
           const timings = pipelineResult?.timings;
+          const resultRenderEngine =
+            job.render_engine ||
+            pipelineResult?.render_engine ||
+            pipelineResult?.render?.engine ||
+            renderEngine;
 
           console.log('[JOB]', status, step, job.progress, job.message);
 
@@ -98,6 +101,8 @@ function App() {
               typeof job.progress === 'number'
                 ? job.progress
                 : prev.progress,
+
+            renderEngine: resultRenderEngine || prev.renderEngine,
 
             llmUsed:
               transcription?.llm_used !== undefined
@@ -147,6 +152,7 @@ function App() {
               status: 'COMPLETED',
               step: 'done',
               progress: 100,
+              renderEngine: resultRenderEngine || prev.renderEngine,
               message: '전체 영상 자막 처리가 완료되었습니다.',
             }));
 
@@ -164,6 +170,8 @@ function App() {
               ...prev,
               status: 'FAILED',
               step: 'failed',
+              progress: 0,
+              renderEngine: resultRenderEngine || prev.renderEngine,
               message: job.error || job.message || '작업이 실패했습니다.',
             }));
           }
@@ -174,7 +182,7 @@ function App() {
     }
 
     return () => clearInterval(timer);
-  }, [polling, jobStatus.jobId]);
+  }, [polling, jobStatus.jobId, renderEngine]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -201,6 +209,7 @@ function App() {
     e.stopPropagation();
 
     const files = e.dataTransfer.files;
+
     if (files && files.length > 0) {
       const file = files[0];
 
@@ -225,12 +234,14 @@ function App() {
         status: 'UPLOADING',
         step: 'upload',
         progress: 3,
+        renderEngine,
         message: '영상을 업로드하는 중입니다.',
       });
 
       const formData = new FormData();
       formData.append('file', videoFile);
-      formData.append('domain', internalDomain); // [보존] 원본 로직 유지
+      formData.append('domain', internalDomain);
+      formData.append('render_engine', renderEngine);
 
       const baseUrl = API_BASE_URL.replace(/\/$/, '');
       const uploadRes = await axios.post(
@@ -256,6 +267,7 @@ function App() {
         status: 'PENDING',
         step: 'queued',
         progress: 5,
+        renderEngine: uploadRes.data?.render_engine || renderEngine,
         message: uploadRes.data?.message || '영상 처리가 시작되었습니다.',
       }));
 
@@ -269,6 +281,7 @@ function App() {
         ...prev,
         status: 'FAILED',
         step: 'failed',
+        progress: 0,
         message:
           err.response?.data?.detail ||
           err.message ||
@@ -277,16 +290,25 @@ function App() {
     }
   };
 
-  // [추가] 개별 다운로드 함수
   const handleDownloadVideo = () => {
     const videoDownloadUrl = processResult?.downloads?.video_download_url;
-    if (!videoDownloadUrl) return alert('영상 파일이 없습니다.');
+
+    if (!videoDownloadUrl) {
+      alert('영상 파일이 없습니다.');
+      return;
+    }
+
     window.open(videoDownloadUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleDownloadSubtitle = () => {
     const subtitleDownloadUrl = processResult?.downloads?.subtitle_download_url;
-    if (!subtitleDownloadUrl) return alert('SRT 파일이 없습니다.');
+
+    if (!subtitleDownloadUrl) {
+      alert('SRT 파일이 없습니다.');
+      return;
+    }
+
     window.open(subtitleDownloadUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -312,7 +334,20 @@ function App() {
 
   const typeOptions = [
     { id: 'formal', name: '문어체', desc: '정치 / 사회 / 뉴스 스타일' },
-    { id: 'casual', name: '구어체', desc: '연예 / 게임 / 브이로그  스타일' },
+    { id: 'casual', name: '구어체', desc: '연예 / 게임 / 브이로그 스타일' },
+  ];
+
+  const renderOptions = [
+    {
+      id: 'opencv',
+      name: 'OpenCV',
+      desc: '디자인 좋음 / 처리 느림',
+    },
+    {
+      id: 'ffmpeg',
+      name: 'FFmpeg',
+      desc: '싱크 안정 / 처리 빠름',
+    },
   ];
 
   const filteredSegments = useMemo(() => {
@@ -401,7 +436,6 @@ function App() {
             AI SUBTITLE PRO
           </h1>
 
-          {/* [변경] 버튼 두 개로 분리 */}
           <div className="flex items-center gap-3">
             <button
               disabled={!processResult}
@@ -483,6 +517,7 @@ function App() {
                     {typeOptions.map((option) => (
                       <button
                         key={option.id}
+                        type="button"
                         onClick={() => setSubtitleType(option.id)}
                         className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${
                           subtitleType === option.id
@@ -540,6 +575,73 @@ function App() {
                   </div>
                 </div>
 
+                <div className="mb-14">
+                  <h3 className="text-xl font-bold mb-6">
+                    자막 렌더링 방식 선택
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    {renderOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setRenderEngine(option.id)}
+                        className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${
+                          renderEngine === option.id
+                            ? 'bg-brand-purple border-brand-purple text-white shadow-xl shadow-brand-purple/20'
+                            : isDark
+                            ? 'bg-[#08090F] border-gray-800/40'
+                            : 'bg-slate-50 border-slate-100'
+                        }`}
+                      >
+                        <div
+                          className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            renderEngine === option.id
+                              ? 'bg-white border-white'
+                              : isDark
+                              ? 'border-gray-700'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {renderEngine === option.id && (
+                            <Check
+                              size={18}
+                              className="text-brand-purple"
+                              strokeWidth={3}
+                            />
+                          )}
+                        </div>
+
+                        <div>
+                          <p
+                            className={`font-bold text-lg ${
+                              renderEngine === option.id
+                                ? 'text-white'
+                                : isDark
+                                ? 'text-gray-400'
+                                : 'text-slate-600'
+                            }`}
+                          >
+                            {option.name}
+                          </p>
+
+                          <p
+                            className={`text-[11px] font-black tracking-widest mt-1 uppercase ${
+                              renderEngine === option.id
+                                ? 'text-white/70'
+                                : isDark
+                                ? 'text-gray-600'
+                                : 'text-slate-400'
+                            }`}
+                          >
+                            {option.desc}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   onClick={handleStartAI}
                   disabled={!videoFile}
@@ -554,16 +656,7 @@ function App() {
                 </button>
               </div>
             </div>
-          ) : polling || (!isDone && !isFailed) ? (
-            <div className="flex-1 flex items-center justify-center">
-              <Status
-                progress={Number(jobStatus.progress || 0)}
-                jobStatus={jobStatus}
-                isDark={isDark}
-                theme={theme}
-              />
-            </div>
-          ) : (
+          ) : isDone ? (
             <>
               <section className="flex-1 flex flex-col p-8 gap-8 min-w-0 h-full">
                 <div className="flex-1 min-h-0 shadow-2xl rounded-3xl overflow-hidden bg-black relative group">
@@ -611,6 +704,15 @@ function App() {
                 />
               </aside>
             </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <Status
+                progress={Number(jobStatus.progress || 0)}
+                jobStatus={jobStatus}
+                isDark={isDark}
+                theme={theme}
+              />
+            </div>
           )}
         </main>
       </div>
