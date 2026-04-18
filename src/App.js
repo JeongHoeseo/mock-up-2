@@ -21,7 +21,7 @@ import Status from './components/Status';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// [보존] 원본 환경 변수 로직
+// [보존] 원본 환경 변수 로직 유지
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
   'https://relay-resulting-turning-mathematical.trycloudflare.com';
@@ -56,17 +56,17 @@ function App() {
 
   const playerRef = useRef(null);
 
-  // [매핑] 백엔드 LORA_REGISTRY 키값과 정확히 일치시켜야 422 에러가 나지 않습니다.
+  // [매핑] UI 타입에 따른 백엔드 도메인 결정
   const internalDomain = subtitleType === 'formal' ? 'politics' : 'ent';
 
+  // [수정] 백엔드 신규 API 구조 적용: /jobs/{job_id}
   useEffect(() => {
     let timer;
     if (polling && jobStatus.jobId) {
       timer = setInterval(async () => {
         try {
-          // URL 끝 슬래시 중복 방지 (상식적 보정)
-          const cleanUrl = API_BASE_URL.replace(/\/$/, '');
-          const res = await axios.get(`${cleanUrl}/status/${jobStatus.jobId}`);
+          const baseUrl = API_BASE_URL.replace(/\/$/, '');
+          const res = await axios.get(`${baseUrl}/jobs/${jobStatus.jobId}`);
           
           const { status, step, message, result } = res.data;
 
@@ -120,13 +120,15 @@ function App() {
     try {
       setJobStatus({ ...initialJobStatus, status: 'UPLOADING' });
       const formData = new FormData();
-      formData.append('video', videoFile);
       
-      // [422 해결] 백엔드가 기대하는 정확한 필드명과 값을 전송
+      // [수정] 백엔드 명세에 맞춰 필드명을 'file'로 변경
+      formData.append('file', videoFile);
       formData.append('domain', internalDomain);
 
-      const cleanUrl = API_BASE_URL.replace(/\/$/, '');
-      const uploadRes = await axios.post(`${cleanUrl}/process`, formData, {
+      const baseUrl = API_BASE_URL.replace(/\/$/, '');
+      
+      // [수정] 404 해결: 엔드포인트를 /upload/process 로 변경
+      const uploadRes = await axios.post(`${baseUrl}/upload/process`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -138,11 +140,10 @@ function App() {
       setPolling(true);
     } catch (err) {
       console.error('Upload fail:', err);
-      // 에러 메시지에 서버가 보낸 구체적인 원인(422 등)을 출력하도록 보존
       setJobStatus((prev) => ({
         ...prev,
         status: 'FAILED',
-        message: err.response?.data?.detail || '데이터 처리 오류 (422)',
+        message: err.response?.data?.detail || '업로드 처리 중 오류가 발생했습니다.',
       }));
     }
   };
@@ -159,7 +160,7 @@ function App() {
 
   const typeOptions = [
     { id: 'formal', name: '문어체', desc: '정치 / 사회 / 뉴스 스타일' },
-    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 브이로그 스타일' },
+    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 휴가 스타일' },
   ];
 
   const filteredSegments = useMemo(() => {
@@ -193,7 +194,7 @@ function App() {
           <button 
             disabled={!localSegments.length}
             className={`px-8 py-4 rounded-2xl font-bold flex items-center gap-2.5 transition-all text-sm shadow-lg ${
-              localSegments.length ? 'bg-brand-purple text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              localSegments.length ? 'bg-brand-purple hover:bg-brand-purple-light text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
             <Download size={22} /> 내보내기
@@ -216,7 +217,7 @@ function App() {
                 </div>
 
                 <div className="mb-14">
-                  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
+                  <h3 className="text-xl font-bold mb-6">자막 말투 선택</h3>
                   <div className="grid grid-cols-2 gap-6">
                     {typeOptions.map((option) => (
                       <button key={option.id} onClick={() => setSubtitleType(option.id)} className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${subtitleType === option.id ? 'bg-brand-purple border-brand-purple text-white shadow-xl shadow-brand-purple/20' : isDark ? 'bg-[#08090F] border-gray-800/40' : 'bg-slate-50 border-slate-100'}`}>
