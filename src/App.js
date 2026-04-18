@@ -56,20 +56,18 @@ function App() {
 
   const playerRef = useRef(null);
 
+  // [매핑] 백엔드 LORA_REGISTRY 키값과 정확히 일치시켜야 422 에러가 나지 않습니다.
   const internalDomain = subtitleType === 'formal' ? 'politics' : 'ent';
-
-  // [유지] URL 끝 슬래시 중복 방지
-  const getBaseUrl = () => API_BASE_URL.replace(/\/$/, '');
 
   useEffect(() => {
     let timer;
     if (polling && jobStatus.jobId) {
       timer = setInterval(async () => {
         try {
-          // 백엔드 명세에 따라 /status 혹은 /upload/status 확인 필요
-          const res = await axios.get(
-            `${getBaseUrl()}/status/${jobStatus.jobId}`
-          );
+          // URL 끝 슬래시 중복 방지 (상식적 보정)
+          const cleanUrl = API_BASE_URL.replace(/\/$/, '');
+          const res = await axios.get(`${cleanUrl}/status/${jobStatus.jobId}`);
+          
           const { status, step, message, result } = res.data;
 
           setJobStatus((prev) => ({
@@ -123,11 +121,12 @@ function App() {
       setJobStatus({ ...initialJobStatus, status: 'UPLOADING' });
       const formData = new FormData();
       formData.append('video', videoFile);
+      
+      // [422 해결] 백엔드가 기대하는 정확한 필드명과 값을 전송
       formData.append('domain', internalDomain);
 
-      // [404 해결 시도] 백엔드 경로가 /upload/process 인지 확인
-      // 만약 백엔드가 확실히 /process 라면 아래 주소를 `${getBaseUrl()}/process` 로 유지하세요.
-      const uploadRes = await axios.post(`${getBaseUrl()}/upload/process`, formData, {
+      const cleanUrl = API_BASE_URL.replace(/\/$/, '');
+      const uploadRes = await axios.post(`${cleanUrl}/process`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -139,10 +138,11 @@ function App() {
       setPolling(true);
     } catch (err) {
       console.error('Upload fail:', err);
+      // 에러 메시지에 서버가 보낸 구체적인 원인(422 등)을 출력하도록 보존
       setJobStatus((prev) => ({
         ...prev,
         status: 'FAILED',
-        message: '404 오류: 백엔드 API 경로가 잘못되었습니다.',
+        message: err.response?.data?.detail || '데이터 처리 오류 (422)',
       }));
     }
   };
@@ -159,7 +159,7 @@ function App() {
 
   const typeOptions = [
     { id: 'formal', name: '문어체', desc: '정치 / 사회 / 뉴스 스타일' },
-    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 휴가 스타일' },
+    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 브이로그 스타일' },
   ];
 
   const filteredSegments = useMemo(() => {
@@ -216,17 +216,16 @@ function App() {
                 </div>
 
                 <div className="mb-14">
-                  <h3 className="text-xl font-bold mb-6">자막 말투 선택</h3>
+                  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
                   <div className="grid grid-cols-2 gap-6">
                     {typeOptions.map((option) => (
-                      <button key={option.id} onClick={() => setSubtitleType(option.id)} className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${subtitleType === option.id ? 'bg-brand-purple border-brand-purple text-white shadow-xl' : isDark ? 'bg-[#08090F] border-gray-800/40' : 'bg-slate-50 border-slate-100'}`}>
+                      <button key={option.id} onClick={() => setSubtitleType(option.id)} className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${subtitleType === option.id ? 'bg-brand-purple border-brand-purple text-white shadow-xl shadow-brand-purple/20' : isDark ? 'bg-[#08090F] border-gray-800/40' : 'bg-slate-50 border-slate-100'}`}>
                         <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${subtitleType === option.id ? 'bg-white border-white' : isDark ? 'border-gray-700' : 'border-slate-300'}`}>{subtitleType === option.id && <Check size={18} className="text-brand-purple" strokeWidth={3} />}</div>
                         <div><p className={`font-bold text-lg ${subtitleType === option.id ? 'text-white' : isDark ? 'text-gray-400' : 'text-slate-600'}`}>{option.name}</p><p className={`text-[11px] font-black tracking-widest mt-1 uppercase ${subtitleType === option.id ? 'text-white/70' : isDark ? 'text-gray-600' : 'text-slate-400'}`}>{option.desc}</p></div>
                       </button>
                     ))}
                   </div>
                 </div>
-
                 <button onClick={handleStartAI} disabled={!videoFile} className={`w-full py-6 rounded-[28px] font-black text-lg shadow-2xl transition-all ${videoFile ? 'bg-brand-purple text-white hover:bg-brand-purple-light' : 'bg-slate-200 text-slate-400'}`}>AI 자막 생성 시작하기 <ChevronRight size={24} className="inline ml-2" /></button>
               </div>
             </div>
