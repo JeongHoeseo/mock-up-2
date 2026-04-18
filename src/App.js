@@ -74,9 +74,36 @@ function App() {
   const pollJobUntilDone = async (baseUrl, jobId) => {
     const cleanBaseUrl = baseUrl.replace(/\/$/, '');
 
+    let failCount = 0;
+    const maxFailCount = 20;
+
     while (true) {
-      const res = await axios.get(`${cleanBaseUrl}/jobs/${jobId}`);
-      const job = res.data;
+      let job = null;
+
+      try {
+        const res = await axios.get(`${cleanBaseUrl}/jobs/${jobId}`, {
+          timeout: 15000,
+        });
+
+        job = res.data;
+        failCount = 0;
+      } catch (err) {
+        failCount += 1;
+
+        console.warn(
+          `[JOB POLL RETRY] ${failCount}/${maxFailCount}`,
+          err?.message || err
+        );
+
+        if (failCount >= maxFailCount) {
+          throw new Error(
+            `작업 상태 조회 중 네트워크 오류가 반복되었습니다. job_id=${jobId}`
+          );
+        }
+
+        await sleep(3000);
+        continue;
+      }
 
       console.log('[JOB]', job.status, job.step, job.progress, job.message);
 
@@ -133,29 +160,17 @@ function App() {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          timeout: 60000,
         }
       );
 
-      /*
-        새 백엔드 구조:
-        {
-          status: "queued",
-          job_id: "..."
-        }
-
-        혹시 백엔드가 아직 예전 구조라면:
-        {
-          status: "success",
-          pipeline_result: {...}
-        }
-        이것도 임시 호환 처리한다.
-      */
       let result = null;
 
       if (startRes.data?.job_id) {
         setProgress(10);
         result = await pollJobUntilDone(baseUrl, startRes.data.job_id);
       } else if (startRes.data?.pipeline_result) {
+        // 예전 백엔드 구조와의 임시 호환
         result = startRes.data.pipeline_result;
       } else {
         throw new Error('백엔드에서 job_id 또는 pipeline_result를 받지 못했습니다.');
@@ -409,15 +424,17 @@ function App() {
                   <div className="relative h-6 w-full bg-gray-500/10 rounded-lg flex items-center overflow-hidden border border-gray-800/20">
                     {duration > 0 &&
                       localSegments.map((seg) => {
-                        const left = (seg.start / duration) * 100;
-                        const width = Math.max(((seg.end - seg.start) / duration) * 100, 0.5);
+                        const start = Number(seg.start ?? 0);
+                        const end = Number(seg.end ?? start);
+                        const left = (start / duration) * 100;
+                        const width = Math.max(((end - start) / duration) * 100, 0.5);
 
                         return (
                           <div
                             key={seg.id}
                             className="absolute h-full bg-brand-purple/40 border-x border-brand-purple/20 hover:bg-brand-purple transition-all cursor-pointer"
                             style={{ left: `${left}%`, width: `${width}%` }}
-                            onClick={() => playerRef.current?.seekTo(seg.start)}
+                            onClick={() => playerRef.current?.seekTo(start)}
                           />
                         );
                       })}
