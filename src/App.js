@@ -16,7 +16,7 @@ function App() {
   const [isDark, setIsDark] = useState(true); 
   const [playing, setPlaying] = useState(false);
   
-  // UI에서는 'formal'과 'casual'만 관리합니다.
+  // UI 선택 상태: 사용자에게는 '문어체'와 '구어체'만 보여줍니다.
   const [subtitleType, setSubtitleType] = useState('formal');
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -24,17 +24,16 @@ function App() {
   const [played, setPlayed] = useState(0); 
   const playerRef = useRef(null);
 
-  // [핵심 매핑] 선택된 타입에 따라 백엔드가 인식하는 LoRA 도메인으로 변환
+  // [매핑] 이전 요청하신 대로 정치/사회/뉴스는 politics(문어), 연예/여행/휴가는 ent(구어)로 연결
   const internalDomain = subtitleType === 'formal' ? 'politics' : 'ent';
   
-  // useProcessing에 매핑된 도메인 전달
   const { data } = useProcessing(serverFileId, internalDomain);
 
   useEffect(() => {
     if (data?.segments) setLocalSegments(data.segments);
   }, [data]);
 
-  // 드래그 앤 드롭 핸들러
+  // [추가] 드래그 앤 드롭 핸들러 (로직만 추가)
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -56,7 +55,7 @@ function App() {
   const handleStartAI = async () => {
     if (!videoFile) return;
 
-    // [절대 보존] 기존 환경 변수 로직
+    // [절대 보존] 사용자님의 기존 환경 변수 로직 (건드리지 않음)
     const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
     if (!rawBaseUrl || rawBaseUrl === "undefined") {
       alert("Vercel 환경 변수가 설정되지 않았습니다.");
@@ -67,8 +66,7 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('video', videoFile);
-      // 내부 매핑된 도메인(politics 또는 ent)을 전송
-      formData.append('domain', internalDomain);
+      formData.append('domain', internalDomain); // 내부 매핑된 도메인 전송
 
       const uploadRes = await axios.post(`${baseUrl}/upload/process`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -80,7 +78,6 @@ function App() {
     }
   };
 
-  // [보존] 기존 가시성 테마 설정
   const theme = {
     bg: isDark ? "bg-[#0A0C14]" : "bg-[#F8FAFC]",
     sidebar: isDark ? "bg-[#11131F] border-gray-800/50" : "bg-white border-gray-200 shadow-sm",
@@ -91,10 +88,9 @@ function App() {
     searchBar: isDark ? "bg-[#1C2030] border-gray-800/50" : "bg-slate-100 border-slate-200"
   };
 
-  // 화면에 보여줄 옵션 (요구사항대로 문어체/구어체 구성)
   const typeOptions = [
     { id: 'formal', name: '문어체', desc: '정치 / 사회 / 뉴스 스타일' },
-    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 휴가 스타일' },
+    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 브이로그 스타일' },
   ];
 
   return (
@@ -162,9 +158,7 @@ function App() {
                         className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${
                           subtitleType === option.id 
                             ? 'bg-brand-purple border-brand-purple text-white shadow-xl shadow-brand-purple/20' 
-                            : isDark 
-                              ? 'bg-[#08090F] border-gray-800/40' 
-                              : 'bg-slate-50 border-slate-100'
+                            : isDark ? 'bg-[#08090F] border-gray-800/40' : 'bg-slate-50 border-slate-100'
                         }`}
                       >
                         <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -173,16 +167,8 @@ function App() {
                           {subtitleType === option.id && <Check size={18} className="text-brand-purple" strokeWidth={3} />}
                         </div>
                         <div>
-                          <p className={`font-bold text-lg transition-colors ${
-                            subtitleType === option.id ? 'text-white' : isDark ? 'text-gray-400' : 'text-slate-600'
-                          }`}>
-                            {option.name}
-                          </p>
-                          <p className={`text-[11px] font-black tracking-widest mt-1 uppercase transition-colors ${
-                            subtitleType === option.id ? 'text-white/70' : isDark ? 'text-gray-600' : 'text-slate-400'
-                          }`}>
-                            {option.desc}
-                          </p>
+                          <p className={`font-bold text-lg ${subtitleType === option.id ? 'text-white' : isDark ? 'text-gray-400' : 'text-slate-600'}`}>{option.name}</p>
+                          <p className={`text-[11px] font-black tracking-widest mt-1 uppercase ${subtitleType === option.id ? 'text-white/70' : isDark ? 'text-gray-600' : 'text-slate-400'}`}>{option.desc}</p>
                         </div>
                       </button>
                     ))}
