@@ -21,7 +21,7 @@ import Status from './components/Status';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// [보존] 원본 환경 변수 로직
+// [보존] 원본 환경 변수 로직 유지
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
   'https://relay-resulting-turning-mathematical.trycloudflare.com';
@@ -58,15 +58,15 @@ function App() {
 
   const internalDomain = subtitleType === 'formal' ? 'politics' : 'ent';
 
-  // [수정] 백엔드 신규 경로 /jobs/{job_id} 로 상태 확인
+  // [수정] 백엔드 완료 신호를 더 정확하게 감지하도록 보강
   useEffect(() => {
     let timer;
     if (polling && jobStatus.jobId) {
       timer = setInterval(async () => {
         try {
           const baseUrl = API_BASE_URL.replace(/\/$/, '');
-          // /status 대신 /jobs 로 변경
           const res = await axios.get(`${baseUrl}/jobs/${jobStatus.jobId}`);
+          
           const { status, step, message, result } = res.data;
 
           setJobStatus((prev) => ({
@@ -81,7 +81,8 @@ function App() {
             timings: res.data.timings,
           }));
 
-          if (status === 'COMPLETED' || status === 'FAILED') {
+          // status가 'COMPLETED' 혹은 'SUCCESS'인 경우 종료
+          if (status === 'COMPLETED' || status === 'SUCCESS' || status === 'FAILED') {
             setPolling(false);
             if (result && result.segments) {
               setLocalSegments(result.segments);
@@ -119,12 +120,10 @@ function App() {
     try {
       setJobStatus({ ...initialJobStatus, status: 'UPLOADING' });
       const formData = new FormData();
-      // [수정] 백엔드 필드명 file 로 변경
       formData.append('file', videoFile);
       formData.append('domain', internalDomain);
 
       const baseUrl = API_BASE_URL.replace(/\/$/, '');
-      // [수정] 엔드포인트 /upload/process 로 변경
       const uploadRes = await axios.post(`${baseUrl}/upload/process`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -157,7 +156,7 @@ function App() {
 
   const typeOptions = [
     { id: 'formal', name: '문어체', desc: '정치 / 사회 / 뉴스 스타일' },
-    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 브이로그 스타일' },
+    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 휴가 스타일' },
   ];
 
   const filteredSegments = useMemo(() => {
@@ -191,7 +190,7 @@ function App() {
           <button 
             disabled={!localSegments.length}
             className={`px-8 py-4 rounded-2xl font-bold flex items-center gap-2.5 transition-all text-sm shadow-lg ${
-              localSegments.length ? 'bg-brand-purple text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              localSegments.length ? 'bg-brand-purple hover:bg-brand-purple-light text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
             <Download size={22} /> 내보내기
@@ -214,7 +213,7 @@ function App() {
                 </div>
 
                 <div className="mb-14">
-                  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
+                  <h3 className="text-xl font-bold mb-6">자막 말투 선택</h3>
                   <div className="grid grid-cols-2 gap-6">
                     {typeOptions.map((option) => (
                       <button key={option.id} onClick={() => setSubtitleType(option.id)} className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${subtitleType === option.id ? 'bg-brand-purple border-brand-purple text-white shadow-xl shadow-brand-purple/20' : isDark ? 'bg-[#08090F] border-gray-800/40' : 'bg-slate-50 border-slate-100'}`}>
@@ -227,7 +226,7 @@ function App() {
                 <button onClick={handleStartAI} disabled={!videoFile} className={`w-full py-6 rounded-[28px] font-black text-lg shadow-2xl transition-all ${videoFile ? 'bg-brand-purple text-white hover:bg-brand-purple-light' : 'bg-slate-200 text-slate-400'}`}>AI 자막 생성 시작하기 <ChevronRight size={24} className="inline ml-2" /></button>
               </div>
             </div>
-          ) : jobStatus.status !== 'COMPLETED' ? (
+          ) : polling || (jobStatus.status !== 'COMPLETED' && jobStatus.status !== 'SUCCESS') ? (
             <div className="flex-1 flex items-center justify-center"><Status jobStatus={jobStatus} isDark={isDark} theme={theme} /></div>
           ) : (
             <>
