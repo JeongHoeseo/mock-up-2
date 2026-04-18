@@ -14,9 +14,12 @@ import {
   Check,
   ChevronRight,
 } from 'lucide-react';
+
 import Player from './components/Player';
 import Editor from './components/Editor';
 import Status from './components/Status';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function App() {
   const [videoFile, setVideoFile] = useState(null);
@@ -45,19 +48,6 @@ function App() {
     };
   }, [videoUrl]);
 
-  useEffect(() => {
-    if (phase !== 'processing') return undefined;
-
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return prev;
-        return prev + 5;
-      });
-    }, 500);
-
-    return () => clearInterval(timer);
-  }, [phase]);
-
   const filteredSegments = useMemo(() => {
     return localSegments.filter((seg) =>
       (seg.corrected || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -81,6 +71,35 @@ function App() {
     setProgress(0);
   };
 
+  const pollJobUntilDone = async (baseUrl, jobId) => {
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+
+    while (true) {
+      const res = await axios.get(`${cleanBaseUrl}/jobs/${jobId}`);
+      const job = res.data;
+
+      console.log('[JOB]', job.status, job.step, job.progress, job.message);
+
+      if (typeof job.progress === 'number') {
+        setProgress(job.progress);
+      }
+
+      if (job.status === 'done') {
+        if (!job.pipeline_result) {
+          throw new Error('작업은 완료되었지만 pipeline_result가 없습니다.');
+        }
+
+        return job.pipeline_result;
+      }
+
+      if (job.status === 'failed') {
+        throw new Error(job.error || '영상 처리 작업이 실패했습니다.');
+      }
+
+      await sleep(2000);
+    }
+  };
+
   const handleStartAI = async () => {
     if (!videoFile) {
       alert('먼저 영상을 선택하세요.');
@@ -96,15 +115,19 @@ function App() {
 
     setErrorMessage('');
     setPhase('processing');
-    setProgress(10);
+    setProgress(5);
+    setProcessResult(null);
+    setLocalSegments([]);
 
     try {
+      const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+
       const formData = new FormData();
       formData.append('file', videoFile);
       formData.append('domain', 'general');
 
-      const res = await axios.post(
-        `${baseUrl.replace(/\/$/, '')}/upload/process`,
+      const startRes = await axios.post(
+        `${cleanBaseUrl}/upload/process`,
         formData,
         {
           headers: {
@@ -113,12 +136,37 @@ function App() {
         }
       );
 
-      const result = res.data?.pipeline_result;
+      /*
+        새 백엔드 구조:
+        {
+          status: "queued",
+          job_id: "..."
+        }
+
+        혹시 백엔드가 아직 예전 구조라면:
+        {
+          status: "success",
+          pipeline_result: {...}
+        }
+        이것도 임시 호환 처리한다.
+      */
+      let result = null;
+
+      if (startRes.data?.job_id) {
+        setProgress(10);
+        result = await pollJobUntilDone(baseUrl, startRes.data.job_id);
+      } else if (startRes.data?.pipeline_result) {
+        result = startRes.data.pipeline_result;
+      } else {
+        throw new Error('백엔드에서 job_id 또는 pipeline_result를 받지 못했습니다.');
+      }
+
       const backendSegments = result?.transcription?.segments ?? [];
 
-      const mappedSegments = backendSegments.map((seg) => ({
+      const mappedSegments = backendSegments.map((seg, index) => ({
         ...seg,
-        corrected: seg.text ?? '',
+        id: seg.id ?? index,
+        corrected: seg.corrected ?? seg.text ?? '',
       }));
 
       setLocalSegments(mappedSegments);
@@ -126,15 +174,18 @@ function App() {
       setProgress(100);
       setPhase('done');
     } catch (err) {
-      console.error('서버 전송 실패:', err);
+      console.error('서버 처리 실패:', err);
 
       let detail = '영상 업로드 또는 처리 중 오류가 발생했습니다.';
+
       if (err.response?.data?.detail) {
         if (typeof err.response.data.detail === 'string') {
           detail = err.response.data.detail;
         } else {
           detail = JSON.stringify(err.response.data.detail);
         }
+      } else if (err.message) {
+        detail = err.message;
       }
 
       setErrorMessage(detail);
@@ -205,7 +256,10 @@ function App() {
             <Folder size={30} className="text-brand-purple" fill="currentColor" />
           </button>
 
-          <button onClick={() => setIsDark(!isDark)} className="p-3 rounded-2xl hover:bg-slate-200 transition-all">
+          <button
+            onClick={() => setIsDark(!isDark)}
+            className="p-3 rounded-2xl hover:bg-slate-200 transition-all"
+          >
             {isDark ? (
               <Sun size={30} className="text-gray-600" fill="currentColor" />
             ) : (
