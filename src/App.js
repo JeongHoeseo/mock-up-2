@@ -58,7 +58,7 @@ function App() {
 
   const internalDomain = subtitleType === 'formal' ? 'politics' : 'ent';
 
-  // [수정] 404 방지를 위해 URL 끝의 슬래시를 제거하는 안전한 기본 URL 생성
+  // [유지] URL 끝 슬래시 중복 방지
   const getBaseUrl = () => API_BASE_URL.replace(/\/$/, '');
 
   useEffect(() => {
@@ -66,7 +66,7 @@ function App() {
     if (polling && jobStatus.jobId) {
       timer = setInterval(async () => {
         try {
-          // [보정] 안전한 URL 사용
+          // 백엔드 명세에 따라 /status 혹은 /upload/status 확인 필요
           const res = await axios.get(
             `${getBaseUrl()}/status/${jobStatus.jobId}`
           );
@@ -125,8 +125,9 @@ function App() {
       formData.append('video', videoFile);
       formData.append('domain', internalDomain);
 
-      // [보정] 404 해결의 핵심: URL 경로를 정확하게 합칩니다.
-      const uploadRes = await axios.post(`${getBaseUrl()}/process`, formData, {
+      // [404 해결 시도] 백엔드 경로가 /upload/process 인지 확인
+      // 만약 백엔드가 확실히 /process 라면 아래 주소를 `${getBaseUrl()}/process` 로 유지하세요.
+      const uploadRes = await axios.post(`${getBaseUrl()}/upload/process`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -141,7 +142,7 @@ function App() {
       setJobStatus((prev) => ({
         ...prev,
         status: 'FAILED',
-        message: '업로드 중 오류가 발생했습니다. (URL 주소를 확인하세요)',
+        message: '404 오류: 백엔드 API 경로가 잘못되었습니다.',
       }));
     }
   };
@@ -192,7 +193,7 @@ function App() {
           <button 
             disabled={!localSegments.length}
             className={`px-8 py-4 rounded-2xl font-bold flex items-center gap-2.5 transition-all text-sm shadow-lg ${
-              localSegments.length ? 'bg-brand-purple hover:bg-brand-purple-light text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              localSegments.length ? 'bg-brand-purple text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
             <Download size={22} /> 내보내기
@@ -218,7 +219,7 @@ function App() {
                   <h3 className="text-xl font-bold mb-6">자막 말투 선택</h3>
                   <div className="grid grid-cols-2 gap-6">
                     {typeOptions.map((option) => (
-                      <button key={option.id} onClick={() => setSubtitleType(option.id)} className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${subtitleType === option.id ? 'bg-brand-purple border-brand-purple text-white shadow-xl shadow-brand-purple/20' : isDark ? 'bg-[#08090F] border-gray-800/40' : 'bg-slate-50 border-slate-100'}`}>
+                      <button key={option.id} onClick={() => setSubtitleType(option.id)} className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${subtitleType === option.id ? 'bg-brand-purple border-brand-purple text-white shadow-xl' : isDark ? 'bg-[#08090F] border-gray-800/40' : 'bg-slate-50 border-slate-100'}`}>
                         <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${subtitleType === option.id ? 'bg-white border-white' : isDark ? 'border-gray-700' : 'border-slate-300'}`}>{subtitleType === option.id && <Check size={18} className="text-brand-purple" strokeWidth={3} />}</div>
                         <div><p className={`font-bold text-lg ${subtitleType === option.id ? 'text-white' : isDark ? 'text-gray-400' : 'text-slate-600'}`}>{option.name}</p><p className={`text-[11px] font-black tracking-widest mt-1 uppercase ${subtitleType === option.id ? 'text-white/70' : isDark ? 'text-gray-600' : 'text-slate-400'}`}>{option.desc}</p></div>
                       </button>
