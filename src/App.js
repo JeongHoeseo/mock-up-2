@@ -312,7 +312,7 @@ function App() {
 
   const typeOptions = [
     { id: 'formal', name: '문어체', desc: '정치 / 사회 / 뉴스 스타일' },
-    { id: 'casual', name: '구어체', desc: '연예 / 여행 / 휴가 스타일' },
+    { id: 'casual', name: '구어체', desc: '연예 / 게임 / 브이로그  스타일' },
   ];
 
   const filteredSegments = useMemo(() => {
@@ -476,7 +476,7 @@ function App() {
 
                 <div className="mb-14 mt-12">
                   <h3 className="text-xl font-bold mb-6">
-                    자막 말투 선택
+                    자막 스타일 선택
                   </h3>
 
                   <div className="grid grid-cols-2 gap-6">
