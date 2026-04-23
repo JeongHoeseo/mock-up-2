@@ -59,6 +59,7 @@ function App() {
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
 
+
   const [subtitleType, setSubtitleType] = useState(null); 
   const [selectedDomain, setSelectedDomain] = useState('general');
   const [renderEngine, setRenderEngine] = useState('opencv');
@@ -668,7 +669,7 @@ function App() {
           ) : isDone ? (
             /* 1. 메인 컨테이너: flex-row로 좌우 배치, h-full로 높이 고정 */
             <div className="flex flex-1 flex-row overflow-hidden h-full bg-black/5">
-              
+
               {/* 2. 왼쪽: 영상 플레이어 영역 */}
               <section className="flex-1 flex flex-col p-8 justify-center min-w-0 h-full">
                 <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
@@ -683,28 +684,29 @@ function App() {
                     segments={localSegments}
                   />
 
-              {/* 자막 미리보기 Overlay (영상 위에 실시간 자막 표시) */}
-              <div className="absolute bottom-12 left-0 right-0 flex justify-center pointer-events-none z-30">
-                {localSegments.map((seg) => {
-                    // 1. played가 비율(0~1)인 경우 duration을 곱해 초 단위로 환산
-                    // 2. 만약 Player 컴포넌트에서 이미 초 단위를 주면 played 그대로 사용
-                  const currentTime = played > 1 ? played : played * duration;
+                  {/* 자막 미리보기 Overlay (영상 위에 실시간 자막 표시) */}
+                  <div className="absolute bottom-12 left-0 right-0 flex justify-center pointer-events-none z-30">
+                    {localSegments.map((seg) => {
+                      // 1. played가 비율(0~1)인 경우 duration을 곱해 초 단위로 환산
+                      // 2. 만약 Player 컴포넌트에서 이미 초 단위를 주면 played 그대로 사용
+                      const currentTime = played > 1 ? played : played * duration;
 
-                    // 현재 시간이 자막 시작과 끝 사이에 있는지 확인
-                  if (currentTime >= seg.start && currentTime <= seg.end) {
-                    return (
-                      <div 
-                        key={seg.id}
-                        className="bg-black/80 text-white px-8 py-3 rounded-2xl text-2xl font-bold text-center backdrop-blur-md border border-white/10 shadow-2xl transition-all duration-300 transform translate-y-0 opacity-100"
-                        style={{ maxWidth: '80%', wordBreak: 'keep-all' }}
-                      >
-                        {seg.corrected || seg.text}
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
+                      // 현재 시간이 자막 시작과 끝 사이에 있는지 확인
+                      if (currentTime >= seg.start && currentTime <= seg.end) {
+                        return (
+                          <div 
+                            key={seg.id}
+                            className="bg-black/80 text-white px-8 py-3 rounded-2xl text-2xl font-bold text-center backdrop-blur-md border border-white/10 shadow-2xl transition-all duration-300 transform translate-y-0 opacity-100"
+                            style={{ maxWidth: '80%', wordBreak: 'keep-all' }}
+                          >
+                            {seg.corrected || seg.text}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                </div>
               </section>
 
               {/* 4. 오른쪽: 자막 편집창 (스크롤 가능하게 고정) */}
