@@ -59,7 +59,6 @@ function App() {
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
 
-
   const [subtitleType, setSubtitleType] = useState(null); 
   const [selectedDomain, setSelectedDomain] = useState('general');
   const [renderEngine, setRenderEngine] = useState('opencv');
@@ -683,6 +682,27 @@ function App() {
                     playerRef={playerRef}
                     segments={localSegments}
                   />
+
+                  {/* 📍 복구된 자막 분포 시각화 바 (Timeline Bar) */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10 w-full z-40">
+                    {localSegments.map((seg) => (
+                      <div
+                        key={`timeline-${seg.id}`}
+                        className="absolute h-full bg-brand-purple/60 border-x border-black/20"
+                        style={{
+                          left: `${(seg.start / duration) * 100}%`,
+                          width: `${((seg.end - seg.start) / duration) * 100}%`,
+                        }}
+                      />
+                    ))}
+                    {/* 현재 재생 시점 표시 마커 */}
+                    <div 
+                      className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] z-50 transition-all duration-100"
+                      style={{ left: `${(played / (played > 1 ? duration : 1)) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </section>
 
               {/* 4. 오른쪽: 자막 편집창 (스크롤 가능하게 고정) */}
               <aside
