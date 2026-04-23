@@ -463,7 +463,7 @@ function App() {
           </div>
         </header>
 
-        <main className="flex-1 flex overflow-hidden min-h-0">
+        <main className="flex-1 flex overflow-hidden min-h-0 pt-24">
           {isIdle ? (
             <div className="flex-1 flex items-center justify-center p-12 overflow-y-auto">
               <div
