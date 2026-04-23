@@ -58,7 +58,7 @@ function App() {
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // ✅ useState들을 App 함수 내부 최상단으로 이동하여 백색 화면 오류 해결
+  
   const [subtitleType, setSubtitleType] = useState(null); 
   const [selectedDomain, setSelectedDomain] = useState('general');
   const [renderEngine, setRenderEngine] = useState('opencv');
@@ -526,7 +526,7 @@ function App() {
                         setSelectedDomain('social_news'); 
                       }}
                       className={`p-7 rounded-[28px] border-2 transition-all ${
-                        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
+                        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple text-black' : 'bg-slate-50'
                       }`}
                     >
                       <p className="font-bold text-lg">문어체</p>
@@ -539,7 +539,7 @@ function App() {
                         setSelectedDomain('ent'); 
                       }}
                       className={`p-7 rounded-[28px] border-2 transition-all ${
-                        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
+                        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple text-black' : 'bg-slate-50'
                       }`}
                     >
                       <p className="font-bold text-lg">구어체</p>
