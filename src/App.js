@@ -665,10 +665,13 @@ function App() {
                 </button>
               </div>
             </div>
-          ) : isDone ? (
-            <>
-              <section className="flex-1 flex flex-col p-8 gap-8 min-w-0 h-full">
-                <div className="flex-1 min-h-0 shadow-2xl rounded-3xl overflow-hidden bg-black relative group">
+) : isDone ? (
+            /* 메인 레이아웃 컨테이너: flex-row를 유지하여 좌(영상)/우(편집창) 배치 */
+            <div className="flex-1 flex overflow-hidden h-full">
+              
+              {/* 1. 영상 재생 영역: 너비를 유연하게 가져가되 최대 크기를 제한 */}
+              <section className="flex-1 flex flex-col p-6 gap-6 min-w-0 bg-black/20">
+                <div className="flex-1 relative rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
                   <Player
                     url={videoUrl}
                     isDark={isDark}
@@ -682,8 +685,9 @@ function App() {
                 </div>
               </section>
 
+              {/* 2. 우측 자막 편집창: 너비를 400px 내외로 고정하여 영상 영역에 밀리지 않게 함 */}
               <aside
-                className={`w-[480px] border-l shadow-2xl transition-all duration-500 ${theme.sidebar} flex flex-col`}
+                className={`w-[400px] border-l shadow-2xl transition-all duration-500 ${theme.sidebar} flex flex-col h-full shrink-0`}
               >
                 <div className="p-4 border-b border-gray-800/30">
                   <div
@@ -700,19 +704,22 @@ function App() {
                   </div>
                 </div>
 
-                <Editor
-                  segments={filteredSegments}
-                  isDark={isDark}
-                  onUpdate={(id, txt) =>
-                    setLocalSegments((prev) =>
-                      prev.map((s) =>
-                        s.id === id ? { ...s, corrected: txt } : s
+                {/* 에디터 영역 */}
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  <Editor
+                    segments={filteredSegments}
+                    isDark={isDark}
+                    onUpdate={(id, txt) =>
+                      setLocalSegments((prev) =>
+                        prev.map((s) =>
+                          s.id === id ? { ...s, corrected: txt } : s
+                        )
                       )
-                    )
-                  }
-                />
+                    }
+                  />
+                </div>
               </aside>
-            </>
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <Status
