@@ -670,7 +670,7 @@ function App() {
             <div className="flex flex-1 flex-row overflow-hidden h-full bg-black/5">
 
               {/* 2. 왼쪽: 영상 플레이어 영역 */}
-              <section className="flex-1 flex flex-col p-8 justify-center min-w-0 h-full">
+              <section className="flex-1 flex flex-col p-8 justify-center min-w-0 h-full relative">
                 <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
                   <Player
                     url={videoUrl}
@@ -682,25 +682,25 @@ function App() {
                     playerRef={playerRef}
                     segments={localSegments}
                   />
+                </div>
 
-                  {/* 📍 복구된 자막 분포 시각화 바 (Timeline Bar) */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10 w-full z-40">
-                    {localSegments.map((seg) => (
-                      <div
-                        key={`timeline-${seg.id}`}
-                        className="absolute h-full bg-brand-purple/60 border-x border-black/20"
-                        style={{
-                          left: `${(seg.start / duration) * 100}%`,
-                          width: `${((seg.end - seg.start) / duration) * 100}%`,
-                        }}
-                      />
-                    ))}
-                    {/* 현재 재생 시점 표시 마커 */}
-                    <div 
-                      className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] z-50 transition-all duration-100"
-                      style={{ left: `${(played / (played > 1 ? duration : 1)) * 100}%` }}
+                {/* 📍 복구된 자막 분포 시각화 바 (독립적인 오버레이 형태) */}
+                <div className="w-full max-w-5xl mx-auto mt-6 h-3 bg-white/10 rounded-full relative overflow-hidden shadow-inner border border-white/5">
+                  {localSegments.map((seg) => (
+                    <div
+                      key={`timeline-${seg.id}`}
+                      className="absolute h-full bg-brand-purple/50 border-x border-black/10"
+                      style={{
+                        left: `${(seg.start / duration) * 100}%`,
+                        width: `${((seg.end - seg.start) / duration) * 100}%`,
+                      }}
                     />
-                  </div>
+                  ))}
+                  {/* 현재 재생 시점 표시 마커 (점 형태) */}
+                  <div 
+                    className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_12px_rgba(255,255,255,1)] z-50 rounded-full"
+                    style={{ left: `${(played / (played > 1 ? duration : 1)) * 100}%`, transition: 'left 0.1s linear' }}
+                  />
                 </div>
               </section>
 
