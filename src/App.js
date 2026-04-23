@@ -465,13 +465,10 @@ function App() {
 
         <main className="flex-1 flex flex-col min-h-0 pt-24 overflow-y-auto">
           {isIdle ? (
-            /* 2. 전체적인 패딩을 p-12에서 p-6으로 줄여 여백 확보 */
             <div className="flex-1 flex items-start justify-center p-6">
               <div
-                /* 3. max-w-5xl을 3xl로, p-14를 p-8로 줄여서 카드 크기를 축소 */
                 className={`w-full max-w-3xl p-8 rounded-[32px] border transition-all duration-500 ${theme.card}`}
               >
-                /* 4. 제목 크기를 text-[32px]에서 text-2xl로, mb-12를 mb-6으로 수정 */
                 <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
                   <Sparkles className="text-brand-purple" size={28} />
                   새로운 AI 자막 프로젝트
@@ -480,7 +477,6 @@ function App() {
                 <div
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  /* 5. 드래그 영역의 패딩을 p-12에서 p-8로 축소 */
                   className={`border-2 border-dashed rounded-[24px] p-8 text-center cursor-pointer transition-all hover:border-brand-purple group ${theme.uploadZone}`}
                 >
                   <input
