@@ -524,59 +524,59 @@ function App() {
                     </p>
                   </label>
                 </div>
-                      
-<div className="mb-14 mt-12">
-  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
 
-  {/* 1층: 문어체/구어체 큰 버튼 */}
-  <div className="grid grid-cols-2 gap-6 mb-6">
-    <button
-      type="button"
-      onClick={() => {
-        setSubtitleType('formal');
-        setSelectedDomain('social_news'); // 클릭 시 해당 카테고리의 첫 번째 도메인 자동 선택
-      }}
-      className={`p-7 rounded-[28px] border-2 transition-all ${
-        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
-      }`}
-    >
-      <p className="font-bold text-lg">문어체</p>
-    </button>
+                <div className="mb-14 mt-12">
+                  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
 
-    <button
-      type="button"
-      onClick={() => {
-        setSubtitleType('casual');
-        setSelectedDomain('ent'); // 클릭 시 해당 카테고리의 첫 번째 도메인 자동 선택
-      }}
-      className={`p-7 rounded-[28px] border-2 transition-all ${
-        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
-      }`}
-    >
-      <p className="font-bold text-lg">구어체</p>
-    </button>
-  </div>
+                  {/* 1층: 문어체/구어체 큰 버튼 */}
+                  <div className="grid grid-cols-2 gap-6 mb-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubtitleType('formal');
+                        setSelectedDomain('social_news'); // 클릭 시 해당 카테고리의 첫 번째 도메인 자동 선택
+                      }}
+                      className={`p-7 rounded-[28px] border-2 transition-all ${
+                        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
+                      }`}
+                    >
+                      <p className="font-bold text-lg">문어체</p>
+                    </button>
 
-  {/* 2층: 선택한 타입에 따른 세부 도메인 칩 (Progressive Disclosure) */}
-  {subtitleType && (
-    <div className="flex justify-center gap-3 p-4 bg-slate-100 rounded-2xl animate-fade-in">
-      {domainMap[subtitleType].map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          onClick={() => setSelectedDomain(option.id)}
-          className={`px-6 py-2 rounded-full border-2 font-bold transition-all ${
-            selectedDomain === option.id 
-            ? 'bg-white text-brand-purple border-brand-purple' 
-            : 'bg-transparent text-slate-400 border-slate-200'
-          }`}
-        >
-          {option.name}
-        </button>
-      ))}
-    </div>
-  )}
-</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubtitleType('casual');
+                        setSelectedDomain('ent'); // 클릭 시 해당 카테고리의 첫 번째 도메인 자동 선택
+                      }}
+                      className={`p-7 rounded-[28px] border-2 transition-all ${
+                        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
+                      }`}
+                    >
+                      <p className="font-bold text-lg">구어체</p>
+                    </button>
+                  </div>
+
+                  {/* 2층: 선택한 타입에 따른 세부 도메인 칩 (Progressive Disclosure) */}
+                  {subtitleType && (
+                    <div className="flex justify-center gap-3 p-4 bg-slate-100 rounded-2xl animate-fade-in">
+                      {domainMap[subtitleType].map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setSelectedDomain(option.id)}
+                          className={`px-6 py-2 rounded-full border-2 font-bold transition-all ${
+                            selectedDomain === option.id 
+                            ? 'bg-white text-brand-purple border-brand-purple' 
+                            : 'bg-transparent text-slate-400 border-slate-200'
+                          }`}
+                        >
+                          {option.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="mb-14">
                   <h3 className="text-xl font-bold mb-6">
