@@ -36,6 +36,22 @@ const initialJobStatus = {
   renderEngine: 'opencv',
 };
 
+// 기존 상태들 사이에 추가
+const [subtitleType, setSubtitleType] = useState(null); // 'formal' (문어체) 또는 'casual' (구어체)
+const [selectedDomain, setSelectedDomain] = useState('general'); // 실제 백엔드 전송용 키값
+
+// 2단계 선택을 위한 도메인 매핑 데이터
+const domainMap = {
+  formal: [
+    { id: 'social_news', name: '사회/뉴스', desc: 'Social & News' },
+    { id: 'politics', name: '정치', desc: 'Politics' }
+  ],
+  casual: [
+    { id: 'ent', name: '연예/엔터', desc: 'Entertainment' },
+    { id: 'vacation', name: '여행/휴가', desc: 'Vacation' }
+  ]
+};
+
 function App() {
   const [videoFile, setVideoFile] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
@@ -240,7 +256,7 @@ function App() {
 
       const formData = new FormData();
       formData.append('file', videoFile);
-      formData.append('domain', internalDomain);
+      formData.append('domain', selectedDomain);
       formData.append('render_engine', renderEngine);
 
       const baseUrl = API_BASE_URL.replace(/\/$/, '');
@@ -509,72 +525,58 @@ function App() {
                   </label>
                 </div>
                       
-                <div className="mb-14 mt-12">
-                  <h3 className="text-xl font-bold mb-6">
-                    자막 스타일 선택
-                  </h3>
+<div className="mb-14 mt-12">
+  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    {typeOptions.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => setSubtitleType(option.id)}
-                        className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${
-                          subtitleType === option.id
-                            ? 'bg-brand-purple border-brand-purple text-white shadow-xl shadow-brand-purple/20'
-                            : isDark
-                            ? 'bg-[#08090F] border-gray-800/40'
-                            : 'bg-slate-50 border-slate-100'
-                        }`}
-                      >
-                        <div
-                          className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            subtitleType === option.id
-                              ? 'bg-white border-white'
-                              : isDark
-                              ? 'border-gray-700'
-                              : 'border-slate-300'
-                          }`}
-                        >
-                          {subtitleType === option.id && (
-                            <Check
-                              size={18}
-                              className="text-brand-purple"
-                              strokeWidth={3}
-                            />
-                          )}
-                        </div>
+  {/* 1층: 문어체/구어체 큰 버튼 */}
+  <div className="grid grid-cols-2 gap-6 mb-6">
+    <button
+      type="button"
+      onClick={() => {
+        setSubtitleType('formal');
+        setSelectedDomain('social_news'); // 클릭 시 해당 카테고리의 첫 번째 도메인 자동 선택
+      }}
+      className={`p-7 rounded-[28px] border-2 transition-all ${
+        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
+      }`}
+    >
+      <p className="font-bold text-lg">문어체</p>
+    </button>
 
-                        <div>
-                          <p
-                            className={`font-bold text-lg ${
-                              subtitleType === option.id
-                                ? 'text-white'
-                                : isDark
-                                ? 'text-gray-400'
-                                : 'text-slate-600'
-                            }`}
-                          >
-                            {option.name}
-                          </p>
+    <button
+      type="button"
+      onClick={() => {
+        setSubtitleType('casual');
+        setSelectedDomain('ent'); // 클릭 시 해당 카테고리의 첫 번째 도메인 자동 선택
+      }}
+      className={`p-7 rounded-[28px] border-2 transition-all ${
+        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
+      }`}
+    >
+      <p className="font-bold text-lg">구어체</p>
+    </button>
+  </div>
 
-                          <p
-                            className={`text-[11px] font-black tracking-widest mt-1 uppercase ${
-                              subtitleType === option.id
-                                ? 'text-white/70'
-                                : isDark
-                                ? 'text-gray-600'
-                                : 'text-slate-400'
-                            }`}
-                          >
-                            {option.desc}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+  {/* 2층: 선택한 타입에 따른 세부 도메인 칩 (Progressive Disclosure) */}
+  {subtitleType && (
+    <div className="flex justify-center gap-3 p-4 bg-slate-100 rounded-2xl animate-fade-in">
+      {domainMap[subtitleType].map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          onClick={() => setSelectedDomain(option.id)}
+          className={`px-6 py-2 rounded-full border-2 font-bold transition-all ${
+            selectedDomain === option.id 
+            ? 'bg-white text-brand-purple border-brand-purple' 
+            : 'bg-transparent text-slate-400 border-slate-200'
+          }`}
+        >
+          {option.name}
+        </button>
+      ))}
+    </div>
+  )}
+</div>
 
                 <div className="mb-14">
                   <h3 className="text-xl font-bold mb-6">
