@@ -515,76 +515,56 @@ function App() {
                   </label>
                 </div>
 
-               <div className="mb-14 mt-12">
-  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
+                <div className="mb-14 mt-12">
+                  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
 
-  {/* 1층: 일반 / 문어체 / 구어체 3버튼 구조 */}
-  <div className="grid grid-cols-3 gap-4 mb-6">
-    {/* 일반 버튼 */}
-    <button
-      type="button"
-      onClick={() => {
-        setSubtitleType('general');
-        setSelectedDomain('general');
-      }}
-      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
-        subtitleType === 'general' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
-      }`}
-    >
-      일반
-    </button>
+                  {/* 1층: 일반 / 문어체 / 구어체 3버튼 구조 */}
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    {/* 일반 버튼 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubtitleType('general');
+                        setSelectedDomain('general');
+                      }}
+                      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
+                        subtitleType === 'general' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
+                      }`}
+                    >
+                      일반
+                    </button>
 
-    {/* 문어체 버튼 */}
-    <button
-      type="button"
-      onClick={() => {
-        setSubtitleType('formal');
-        setSelectedDomain('social_news');
-      }}
-      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
-        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
-      }`}
-    >
-      문어체
-    </button>
+                    {/* 문어체 버튼 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubtitleType('formal');
+                        setSelectedDomain('social_news');
+                      }}
+                      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
+                        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
+                      }`}
+                    >
+                      문어체
+                    </button>
 
-    {/* 구어체 버튼 */}
-    <button
-      type="button"
-      onClick={() => {
-        setSubtitleType('casual');
-        setSelectedDomain('ent');
-      }}
-      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
-        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
-      }`}
-    >
-      구어체
-    </button>
-  </div>
+                    {/* 구어체 버튼 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubtitleType('casual');
+                        setSelectedDomain('ent');
+                      }}
+                      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
+                        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
+                      }`}
+                    >
+                      구어체
+                    </button>
+                  </div>
 
-  {/* 2층: 세부 도메인 칩 (일반이 아닐 때만 노출) */}
-  {subtitleType && domainMap[subtitleType].length > 0 && (
-    <div className="flex justify-center gap-3 p-4 bg-slate-100 rounded-2xl animate-fade-in">
-      {domainMap[subtitleType].map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          onClick={() => setSelectedDomain(option.id)}
-          className={`px-6 py-2 rounded-full border-2 font-bold transition-all ${
-            selectedDomain === option.id 
-            ? 'bg-white text-brand-purple border-brand-purple' 
-            : 'bg-transparent text-slate-400 border-slate-200'
-          }`}
-        >
-          {option.name}
-        </button>
-      ))}
-    </div>
-  )}
-</div>
-
-                  {subtitleType && (
+                  {/* 2층: 세부 도메인 칩 (일반이 아닐 때만 노출) */}
+                  {subtitleType && domainMap[subtitleType].length > 0 && (
                     <div className="flex justify-center gap-3 p-4 bg-slate-100 rounded-2xl animate-fade-in">
                       {domainMap[subtitleType].map((option) => (
                         <button
@@ -592,9 +572,9 @@ function App() {
                           type="button"
                           onClick={() => setSelectedDomain(option.id)}
                           className={`px-6 py-2 rounded-full border-2 font-bold transition-all ${
-                            selectedDomain === option.id
-                              ? 'bg-white text-brand-purple border-brand-purple'
-                              : 'bg-transparent text-slate-400 border-slate-200'
+                            selectedDomain === option.id 
+                            ? 'bg-white text-brand-purple border-brand-purple' 
+                            : 'bg-transparent text-slate-400 border-slate-200'
                           }`}
                         >
                           {option.name}
