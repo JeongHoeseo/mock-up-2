@@ -665,13 +665,13 @@ function App() {
                 </button>
               </div>
             </div>
-) : isDone ? (
-            /* 메인 레이아웃 컨테이너: flex-row를 유지하여 좌(영상)/우(편집창) 배치 */
-            <div className="flex-1 flex overflow-hidden h-full">
+          ) : isDone ? (
+            /* 1. 메인 컨테이너: flex-row로 좌우 배치, h-full로 높이 고정 */
+            <div className="flex flex-1 flex-row overflow-hidden h-full bg-black/5">
               
-              {/* 1. 영상 재생 영역: 너비를 유연하게 가져가되 최대 크기를 제한 */}
-              <section className="flex-1 flex flex-col p-6 gap-6 min-w-0 bg-black/20">
-                <div className="flex-1 relative rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
+              {/* 2. 왼쪽: 영상 플레이어 영역 */}
+              <section className="flex-1 flex flex-col p-8 justify-center min-w-0 h-full">
+                <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
                   <Player
                     url={videoUrl}
                     isDark={isDark}
@@ -682,30 +682,45 @@ function App() {
                     playerRef={playerRef}
                     segments={localSegments}
                   />
+
+                  {/* 3. 자막 미리보기 Overlay (영상 위에 실시간 자막 표시) */}
+                  <div className="absolute bottom-10 left-0 right-0 flex justify-center pointer-events-none">
+                    {localSegments.map((seg) => {
+                      const currentTime = played; // 현재 재생 시간
+                      if (currentTime >= seg.start && currentTime <= seg.end) {
+                        return (
+                          <div 
+                            key={seg.id}
+                            className="bg-black/70 text-white px-6 py-2 rounded-xl text-xl font-bold text-center backdrop-blur-sm border border-white/20 animate-fade-in"
+                          >
+                            {seg.corrected || seg.text}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
                 </div>
               </section>
 
-              {/* 2. 우측 자막 편집창: 너비를 400px 내외로 고정하여 영상 영역에 밀리지 않게 함 */}
+              {/* 4. 오른쪽: 자막 편집창 (스크롤 가능하게 고정) */}
               <aside
-                className={`w-[400px] border-l shadow-2xl transition-all duration-500 ${theme.sidebar} flex flex-col h-full shrink-0`}
+                className={`w-[420px] border-l shadow-2xl transition-all duration-500 ${theme.sidebar} flex flex-col h-full shrink-0`}
               >
-                <div className="p-4 border-b border-gray-800/30">
-                  <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${theme.searchBar}`}
-                  >
+                <div className="p-5 border-b border-gray-800/30 bg-black/5">
+                  <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${theme.searchBar}`}>
                     <Search size={16} className="text-gray-500" />
                     <input
                       type="text"
                       placeholder="자막 검색..."
-                      className="bg-transparent outline-none text-sm w-full"
+                      className="bg-transparent outline-none text-sm w-full font-medium"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
                 </div>
 
-                {/* 에디터 영역 */}
-                <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
                   <Editor
                     segments={filteredSegments}
                     isDark={isDark}
