@@ -523,26 +523,32 @@ function App() {
                       type="button"
                       onClick={() => {
                         setSubtitleType('formal');
-                        setSelectedDomain('social_news'); 
+                        setSelectedDomain('social_news');
                       }}
-                      className={`p-7 rounded-[28px] border-2 transition-all ${
-                        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple text-black' : 'bg-slate-50'
+                      /* text-black을 추가하여 다크모드에서도 글자색이 검은색으로 유지되게 합니다 */
+                      className={`p-7 rounded-[28px] border-2 transition-all text-black font-bold ${
+                        subtitleType === 'formal' 
+                          ? 'bg-brand-purple border-brand-purple' 
+                          : 'bg-slate-50 border-transparent'
                       }`}
                     >
-                      <p className="font-bold text-lg">문어체</p>
+                      <p className="text-lg">문어체</p>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => {
                         setSubtitleType('casual');
-                        setSelectedDomain('ent'); 
+                        setSelectedDomain('ent');
                       }}
-                      className={`p-7 rounded-[28px] border-2 transition-all ${
-                        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple text-black' : 'bg-slate-50'
+                      /* 위와 동일하게 text-black 적용 */
+                      className={`p-7 rounded-[28px] border-2 transition-all text-black font-bold ${
+                        subtitleType === 'casual'
+                          ? 'bg-brand-purple border-brand-purple' 
+                          : 'bg-slate-50 border-transparent'
                       }`}
                     >
-                      <p className="font-bold text-lg">구어체</p>
+                      <p className="text-lg">구어체</p>
                     </button>
                   </div>
 
