@@ -36,11 +36,7 @@ const initialJobStatus = {
   renderEngine: 'opencv',
 };
 
-// 기존 상태들 사이에 추가
-const [subtitleType, setSubtitleType] = useState(null); // 'formal' (문어체) 또는 'casual' (구어체)
-const [selectedDomain, setSelectedDomain] = useState('general'); // 실제 백엔드 전송용 키값
-
-// 2단계 선택을 위한 도메인 매핑 데이터
+// 2단계 선택을 위한 도메인 매핑 데이터 (상수는 함수 밖에 있어도 됨)
 const domainMap = {
   formal: [
     { id: 'social_news', name: '사회/뉴스', desc: 'Social & News' },
@@ -62,7 +58,9 @@ function App() {
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  const [subtitleType, setSubtitleType] = useState('formal');
+  // ✅ useState들을 App 함수 내부 최상단으로 이동하여 백색 화면 오류 해결
+  const [subtitleType, setSubtitleType] = useState(null); 
+  const [selectedDomain, setSelectedDomain] = useState('general');
   const [renderEngine, setRenderEngine] = useState('opencv');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -71,8 +69,6 @@ function App() {
   const [processResult, setProcessResult] = useState(null);
 
   const playerRef = useRef(null);
-
-  const internalDomain = subtitleType === 'formal' ? 'politics' : 'ent';
 
   useEffect(() => {
     return () => {
@@ -348,11 +344,6 @@ function App() {
       : 'bg-slate-100 border-slate-200',
   };
 
-  const typeOptions = [
-    { id: 'formal', name: '문어체', desc: '정치 / 사회 / 뉴스 스타일' },
-    { id: 'casual', name: '구어체', desc: '연예 / 게임 / 브이로그 스타일' },
-  ];
-
   const renderOptions = [
     {
       id: 'opencv',
@@ -510,7 +501,6 @@ function App() {
 
                   <label htmlFor="video-upload" className="cursor-pointer">
                     <FileVideo
-                      /* 6. 아이콘 크기를 64에서 48로, 간격을 mb-6에서 mb-4로 축소 */
                       size={48}
                       className={`${
                         isDark ? 'text-gray-700' : 'text-slate-300'
@@ -528,13 +518,12 @@ function App() {
                 <div className="mb-14 mt-12">
                   <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
 
-                  {/* 1층: 문어체/구어체 큰 버튼 */}
                   <div className="grid grid-cols-2 gap-6 mb-6">
                     <button
                       type="button"
                       onClick={() => {
                         setSubtitleType('formal');
-                        setSelectedDomain('social_news'); // 클릭 시 해당 카테고리의 첫 번째 도메인 자동 선택
+                        setSelectedDomain('social_news'); 
                       }}
                       className={`p-7 rounded-[28px] border-2 transition-all ${
                         subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
@@ -547,7 +536,7 @@ function App() {
                       type="button"
                       onClick={() => {
                         setSubtitleType('casual');
-                        setSelectedDomain('ent'); // 클릭 시 해당 카테고리의 첫 번째 도메인 자동 선택
+                        setSelectedDomain('ent'); 
                       }}
                       className={`p-7 rounded-[28px] border-2 transition-all ${
                         subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-slate-50'
@@ -557,7 +546,6 @@ function App() {
                     </button>
                   </div>
 
-                  {/* 2층: 선택한 타입에 따른 세부 도메인 칩 (Progressive Disclosure) */}
                   {subtitleType && (
                     <div className="flex justify-center gap-3 p-4 bg-slate-100 rounded-2xl animate-fade-in">
                       {domainMap[subtitleType].map((option) => (
