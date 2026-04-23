@@ -463,21 +463,25 @@ function App() {
           </div>
         </header>
 
-        <main className="flex-1 flex overflow-hidden min-h-0 pt-24">
+        <main className="flex-1 flex flex-col min-h-0 pt-24 overflow-y-auto">
           {isIdle ? (
-            <div className="flex-1 flex items-center justify-center p-12 overflow-y-auto">
+            /* 2. 전체적인 패딩을 p-12에서 p-6으로 줄여 여백 확보 */
+            <div className="flex-1 flex items-start justify-center p-6">
               <div
-                className={`w-full max-w-5xl p-14 rounded-[48px] border transition-all duration-500 ${theme.card}`}
+                /* 3. max-w-5xl을 3xl로, p-14를 p-8로 줄여서 카드 크기를 축소 */
+                className={`w-full max-w-3xl p-8 rounded-[32px] border transition-all duration-500 ${theme.card}`}
               >
-                <h2 className="text-[32px] font-extrabold mb-12 flex items-center gap-4">
-                  <Sparkles className="text-brand-purple" size={32} />
+                /* 4. 제목 크기를 text-[32px]에서 text-2xl로, mb-12를 mb-6으로 수정 */
+                <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
+                  <Sparkles className="text-brand-purple" size={28} />
                   새로운 AI 자막 프로젝트
                 </h2>
 
                 <div
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-[32px] p-12 text-center cursor-pointer transition-all hover:border-brand-purple group ${theme.uploadZone}`}
+                  /* 5. 드래그 영역의 패딩을 p-12에서 p-8로 축소 */
+                  className={`border-2 border-dashed rounded-[24px] p-8 text-center cursor-pointer transition-all hover:border-brand-purple group ${theme.uploadZone}`}
                 >
                   <input
                     type="file"
@@ -494,20 +498,21 @@ function App() {
 
                   <label htmlFor="video-upload" className="cursor-pointer">
                     <FileVideo
-                      size={64}
+                      /* 6. 아이콘 크기를 64에서 48로, 간격을 mb-6에서 mb-4로 축소 */
+                      size={48}
                       className={`${
                         isDark ? 'text-gray-700' : 'text-slate-300'
-                      } group-hover:text-brand-purple mx-auto mb-6`}
+                      } group-hover:text-brand-purple mx-auto mb-4`}
                     />
 
-                    <p className="text-lg font-bold mb-2">
+                    <p className="text-base font-bold mb-1">
                       {videoFile
                         ? videoFile.name
                         : '클릭하거나 드래그하여 업로드하세요.'}
                     </p>
                   </label>
                 </div>
-
+                      
                 <div className="mb-14 mt-12">
                   <h3 className="text-xl font-bold mb-6">
                     자막 스타일 선택
