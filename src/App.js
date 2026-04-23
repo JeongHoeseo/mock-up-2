@@ -58,7 +58,6 @@ function App() {
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  
   const [subtitleType, setSubtitleType] = useState(null); 
   const [selectedDomain, setSelectedDomain] = useState('general');
   const [renderEngine, setRenderEngine] = useState('opencv');
@@ -519,36 +518,36 @@ function App() {
                   <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
 
                   <div className="grid grid-cols-2 gap-6 mb-6">
+                    {/* 문어체 버튼 */}
                     <button
                       type="button"
                       onClick={() => {
                         setSubtitleType('formal');
                         setSelectedDomain('social_news');
                       }}
-                      /* text-black을 추가하여 다크모드에서도 글자색이 검은색으로 유지되게 합니다 */
-                      className={`p-7 rounded-[28px] border-2 transition-all text-black font-bold ${
-                        subtitleType === 'formal' 
-                          ? 'bg-brand-purple border-brand-purple' 
-                          : 'bg-slate-50 border-transparent'
+                      className={`p-7 rounded-[28px] border-2 transition-all font-bold text-black ${
+                        subtitleType === 'formal'
+                          ? 'bg-brand-purple border-brand-purple'
+                          : 'bg-white border-transparent'
                       }`}
                     >
-                      <p className="text-lg">문어체</p>
+                      문어체
                     </button>
 
+                    {/* 구어체 버튼 */}
                     <button
                       type="button"
                       onClick={() => {
                         setSubtitleType('casual');
                         setSelectedDomain('ent');
                       }}
-                      /* 위와 동일하게 text-black 적용 */
-                      className={`p-7 rounded-[28px] border-2 transition-all text-black font-bold ${
+                      className={`p-7 rounded-[28px] border-2 transition-all font-bold text-black ${
                         subtitleType === 'casual'
-                          ? 'bg-brand-purple border-brand-purple' 
-                          : 'bg-slate-50 border-transparent'
+                          ? 'bg-brand-purple border-brand-purple'
+                          : 'bg-white border-transparent'
                       }`}
                     >
-                      <p className="text-lg">구어체</p>
+                      구어체
                     </button>
                   </div>
 
@@ -560,9 +559,9 @@ function App() {
                           type="button"
                           onClick={() => setSelectedDomain(option.id)}
                           className={`px-6 py-2 rounded-full border-2 font-bold transition-all ${
-                            selectedDomain === option.id 
-                            ? 'bg-white text-brand-purple border-brand-purple' 
-                            : 'bg-transparent text-slate-400 border-slate-200'
+                            selectedDomain === option.id
+                              ? 'bg-white text-brand-purple border-brand-purple'
+                              : 'bg-transparent text-slate-400 border-slate-200'
                           }`}
                         >
                           {option.name}
