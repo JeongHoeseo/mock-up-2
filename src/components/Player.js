@@ -18,6 +18,7 @@ function Player({
   playerRef,
   playing,
   setPlaying,
+  objectPosition = 'center center',
 }) {
   const wrapperRef = useRef(null);
 
@@ -136,6 +137,7 @@ function Player({
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
+                objectPosition: objectPosition,
                 backgroundColor: 'black',
                 display: 'block',
               },
@@ -180,12 +182,17 @@ function Player({
               }}
               className="hover:scale-110 active:scale-95 transition-transform"
             >
-              {playing ? <Pause size={34} /> : <Play size={34} fill="currentColor" />}
+              {playing ? (
+                <Pause size={34} />
+              ) : (
+                <Play size={34} fill="currentColor" />
+              )}
             </button>
 
             <button
               onClick={(e) => {
                 e.stopPropagation();
+
                 if (playerRef?.current) {
                   playerRef.current.seekTo(0, 'fraction');
                 }
