@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import {
   Video,
-  Folder,
   User,
   Download,
   Sparkles,
@@ -36,39 +35,57 @@ const initialJobStatus = {
   renderEngine: 'opencv',
 };
 
-// 2단계 선택을 위한 도메인 매핑 데이터 (상수는 함수 밖에 있어도 됨)
 const domainMap = {
-  general: [], // 일반 선택 시 세부 메뉴 없음
+  general: [],
   formal: [
     { id: 'social_news', name: '사회/뉴스', desc: 'Social & News' },
-    { id: 'politics', name: '정치', desc: 'Politics' }
+    { id: 'politics', name: '정치', desc: 'Politics' },
   ],
   casual: [
     { id: 'ent', name: '연예/엔터', desc: 'Entertainment' },
-    { id: 'vacation', name: '여행/휴가', desc: 'Vacation' }
-  ]
+    { id: 'vacation', name: '여행/휴가', desc: 'Vacation' },
+  ],
 };
 
 function App() {
   const [videoFile, setVideoFile] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
-
   const [localSegments, setLocalSegments] = useState([]);
   const [isDark, setIsDark] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
-
-  const [subtitleType, setSubtitleType] = useState(null); 
+  const [subtitleType, setSubtitleType] = useState(null);
   const [selectedDomain, setSelectedDomain] = useState('general');
   const [renderEngine, setRenderEngine] = useState('opencv');
   const [searchTerm, setSearchTerm] = useState('');
-
   const [jobStatus, setJobStatus] = useState(initialJobStatus);
   const [polling, setPolling] = useState(false);
   const [processResult, setProcessResult] = useState(null);
 
   const playerRef = useRef(null);
+
+  const baseUrl = useMemo(() => API_BASE_URL.replace(/\/$/, ''), []);
+
+  const getAbsoluteUrl = (url) => {
+    if (!url) return null;
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+  };
+
+  const resultVideoUrl = getAbsoluteUrl(
+    processResult?.downloads?.video_download_url
+  );
+
+  const resultSubtitleUrl = getAbsoluteUrl(
+    processResult?.downloads?.subtitle_download_url
+  );
+
+  const previewVideoUrl = resultVideoUrl || videoUrl;
 
   useEffect(() => {
     return () => {
@@ -84,7 +101,6 @@ function App() {
     if (polling && jobStatus.jobId) {
       timer = setInterval(async () => {
         try {
-          const baseUrl = API_BASE_URL.replace(/\/$/, '');
           const res = await axios.get(`${baseUrl}/jobs/${jobStatus.jobId}`, {
             timeout: 15000,
           });
@@ -96,13 +112,12 @@ function App() {
 
           const transcription = pipelineResult?.transcription;
           const timings = pipelineResult?.timings;
+
           const resultRenderEngine =
             job.render_engine ||
             pipelineResult?.render_engine ||
             pipelineResult?.render?.engine ||
             renderEngine;
-
-          console.log('[JOB]', status, step, job.progress, job.message);
 
           setJobStatus((prev) => ({
             ...prev,
@@ -110,32 +125,24 @@ function App() {
             step: job.step || prev.step,
             message: job.message || prev.message,
             progress:
-              typeof job.progress === 'number'
-                ? job.progress
-                : prev.progress,
-
+              typeof job.progress === 'number' ? job.progress : prev.progress,
             renderEngine: resultRenderEngine || prev.renderEngine,
-
             llmUsed:
               transcription?.llm_used !== undefined
                 ? transcription.llm_used
                 : prev.llmUsed,
-
             llmServiceUrl:
               transcription?.llm_service_url !== undefined
                 ? transcription.llm_service_url
                 : prev.llmServiceUrl,
-
             llmFallbackUsed:
               transcription?.llm_fallback_used !== undefined
                 ? transcription.llm_fallback_used
                 : prev.llmFallbackUsed,
-
             llmFallbackReason:
               transcription?.llm_fallback_reason !== undefined
                 ? transcription.llm_fallback_reason
                 : prev.llmFallbackReason,
-
             timings: timings || prev.timings,
           }));
 
@@ -158,6 +165,7 @@ function App() {
 
             setLocalSegments(mappedSegments);
             setProcessResult(pipelineResult || null);
+            setPlaying(false);
 
             setJobStatus((prev) => ({
               ...prev,
@@ -194,7 +202,7 @@ function App() {
     }
 
     return () => clearInterval(timer);
-  }, [polling, jobStatus.jobId, renderEngine]);
+  }, [polling, jobStatus.jobId, renderEngine, baseUrl]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -203,6 +211,11 @@ function App() {
 
   const setSelectedVideo = (file) => {
     if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      alert('비디오 파일만 업로드 가능합니다.');
+      return;
+    }
 
     if (videoUrl) {
       URL.revokeObjectURL(videoUrl);
@@ -213,6 +226,9 @@ function App() {
     setLocalSegments([]);
     setProcessResult(null);
     setPolling(false);
+    setPlaying(false);
+    setPlayed(0);
+    setDuration(0);
     setJobStatus(initialJobStatus);
   };
 
@@ -223,13 +239,7 @@ function App() {
     const files = e.dataTransfer.files;
 
     if (files && files.length > 0) {
-      const file = files[0];
-
-      if (file.type.startsWith('video/')) {
-        setSelectedVideo(file);
-      } else {
-        alert('비디오 파일만 업로드 가능합니다.');
-      }
+      setSelectedVideo(files[0]);
     }
   };
 
@@ -240,6 +250,7 @@ function App() {
       setLocalSegments([]);
       setProcessResult(null);
       setPolling(false);
+      setPlaying(false);
 
       setJobStatus({
         ...initialJobStatus,
@@ -255,17 +266,12 @@ function App() {
       formData.append('domain', selectedDomain);
       formData.append('render_engine', renderEngine);
 
-      const baseUrl = API_BASE_URL.replace(/\/$/, '');
-      const uploadRes = await axios.post(
-        `${baseUrl}/upload/process`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          timeout: 60000,
-        }
-      );
+      const uploadRes = await axios.post(`${baseUrl}/upload/process`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 60000,
+      });
 
       const jobId = uploadRes.data?.job_id;
 
@@ -303,25 +309,21 @@ function App() {
   };
 
   const handleDownloadVideo = () => {
-    const videoDownloadUrl = processResult?.downloads?.video_download_url;
-
-    if (!videoDownloadUrl) {
+    if (!resultVideoUrl) {
       alert('영상 파일이 없습니다.');
       return;
     }
 
-    window.open(videoDownloadUrl, '_blank', 'noopener,noreferrer');
+    window.open(resultVideoUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleDownloadSubtitle = () => {
-    const subtitleDownloadUrl = processResult?.downloads?.subtitle_download_url;
-
-    if (!subtitleDownloadUrl) {
+    if (!resultSubtitleUrl) {
       alert('SRT 파일이 없습니다.');
       return;
     }
 
-    window.open(subtitleDownloadUrl, '_blank', 'noopener,noreferrer');
+    window.open(resultSubtitleUrl, '_blank', 'noopener,noreferrer');
   };
 
   const theme = {
@@ -333,6 +335,7 @@ function App() {
       ? 'bg-[#11131F]/60 border-gray-800/50'
       : 'bg-white/80 border-gray-200 shadow-sm',
     text: isDark ? 'text-white' : 'text-[#1E293B]',
+    subText: isDark ? 'text-slate-400' : 'text-slate-500',
     card: isDark
       ? 'bg-[#11131F] border-gray-800/50'
       : 'bg-white border-transparent shadow-xl',
@@ -370,127 +373,99 @@ function App() {
   const normalizedStatus = String(jobStatus.status || '').toLowerCase();
 
   const isIdle = !normalizedStatus || normalizedStatus === 'idle';
-
   const isDone =
     normalizedStatus === 'done' ||
     normalizedStatus === 'completed' ||
     normalizedStatus === 'success';
+  const isFailed = normalizedStatus === 'failed' || normalizedStatus === 'error';
 
-  const isFailed =
-    normalizedStatus === 'failed' ||
-    normalizedStatus === 'error';
+  const safeDuration = duration > 0 ? duration : 1;
 
   return (
     <div
-      className={`flex h-screen font-sans overflow-hidden transition-colors duration-500 ${theme.bg} ${theme.text}`}
+      className={`min-h-screen flex transition-colors duration-500 ${theme.bg} ${theme.text}`}
     >
       <aside
-        className={`w-24 flex flex-col items-center py-10 border-r transition-all duration-500 ${theme.sidebar} z-20`}
+        className={`w-24 shrink-0 border-r flex flex-col items-center py-8 gap-6 ${theme.sidebar}`}
       >
-        <div className="w-14 h-14 bg-brand-purple rounded-3xl flex items-center justify-center shadow-lg mb-12 shrink-0">
-          <Video size={32} className="text-white" fill="currentColor" />
-        </div>
+        <button className="w-14 h-14 rounded-2xl bg-brand-purple flex items-center justify-center shadow-lg shadow-brand-purple/30">
+          <Sparkles size={30} className="text-white" fill="currentColor" />
+        </button>
 
-        <div className="flex flex-col items-center gap-12 relative w-full">
-          <button
-            className={`p-3 rounded-2xl transition-colors ${
-              isDark ? 'bg-brand-purple/10' : 'bg-slate-100'
-            }`}
-          >
-            <Folder
-              size={30}
-              className="text-brand-purple"
-              fill="currentColor"
-            />
-          </button>
-
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="p-3 rounded-2xl hover:bg-slate-200 transition-all"
-          >
-            {isDark ? (
-              <Sun
-                size={30}
-                className="text-gray-600"
-                fill="currentColor"
-              />
-            ) : (
-              <Moon
-                size={30}
-                className="text-slate-400"
-                fill="currentColor"
-              />
-            )}
-          </button>
-        </div>
+        <button
+          onClick={() => setIsDark(!isDark)}
+          className="p-3 rounded-2xl hover:bg-slate-200/10 transition-all"
+        >
+          {isDark ? (
+            <Sun size={30} className="text-yellow-300" />
+          ) : (
+            <Moon size={30} className="text-slate-500" />
+          )}
+        </button>
 
         <div className="mt-auto p-3">
-          <User
-            size={30}
-            className="text-slate-300"
-            fill="currentColor"
-          />
+          <User size={30} className="text-slate-400" />
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-w-0">
         <header
           className={`h-24 border-b backdrop-blur-xl flex items-center justify-between px-12 z-10 transition-all duration-500 ${theme.header}`}
         >
-          <h1
-            className={`text-3xl font-black tracking-tighter italic ${theme.text}`}
-          >
+          <h1 className={`text-3xl font-black tracking-tighter italic ${theme.text}`}>
             AI SUBTITLE PRO
           </h1>
 
           <div className="flex items-center gap-3">
             <button
-              disabled={!processResult}
+              disabled={!resultVideoUrl}
               onClick={handleDownloadVideo}
               className={`px-6 py-4 rounded-2xl font-bold flex items-center gap-2.5 transition-all text-sm shadow-lg ${
-                processResult
+                resultVideoUrl
                   ? 'bg-brand-purple hover:bg-brand-purple-light text-white'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
-              <Download size={22} /> 영상 다운로드
+              <Download size={22} />
+              영상 다운로드
             </button>
 
             <button
-              disabled={!processResult}
+              disabled={!resultSubtitleUrl}
               onClick={handleDownloadSubtitle}
               className={`px-6 py-4 rounded-2xl font-bold flex items-center gap-2.5 transition-all text-sm shadow-lg ${
-                processResult
+                resultSubtitleUrl
                   ? 'bg-slate-800 hover:bg-slate-700 text-white'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
-              <Download size={22} /> SRT 다운로드
+              <Download size={22} />
+              SRT 다운로드
             </button>
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col min-h-0 pt-24 overflow-y-auto">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {isIdle ? (
-            <div className="flex-1 flex items-start justify-center p-6">
+            <div className="flex-1 overflow-y-auto p-6">
               <div
-                className={`w-full max-w-3xl p-8 rounded-[32px] border transition-all duration-500 ${theme.card}`}
+                className={`w-full max-w-3xl mx-auto p-8 rounded-[32px] border transition-all duration-500 ${theme.card}`}
               >
                 <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
-                  <Sparkles className="text-brand-purple" size={28} />
+                  <Video className="text-brand-purple" />
                   새로운 AI 자막 프로젝트
                 </h2>
 
                 <div
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-[24px] p-8 text-center cursor-pointer transition-all hover:border-brand-purple group ${theme.uploadZone}`}
+                  className={`border-2 border-dashed rounded-[28px] p-10 text-center cursor-pointer transition-all ${theme.uploadZone}`}
                 >
                   <input
-                    type="file"
                     id="video-upload"
-                    className="hidden"
+                    type="file"
                     accept="video/*"
+                    className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -499,82 +474,99 @@ function App() {
                     }}
                   />
 
-                  <label htmlFor="video-upload" className="cursor-pointer">
-                    <FileVideo
-                      size={48}
-                      className={`${
-                        isDark ? 'text-gray-700' : 'text-slate-300'
-                      } group-hover:text-brand-purple mx-auto mb-4`}
-                    />
+                  <label
+                    htmlFor="video-upload"
+                    className="cursor-pointer flex flex-col items-center gap-4"
+                  >
+                    <div className="w-20 h-20 rounded-3xl bg-brand-purple/10 flex items-center justify-center">
+                      <FileVideo size={38} className="text-brand-purple" />
+                    </div>
 
-                    <p className="text-base font-bold mb-1">
-                      {videoFile
-                        ? videoFile.name
-                        : '클릭하거나 드래그하여 업로드하세요.'}
-                    </p>
+                    <div>
+                      <p className="text-lg font-black">
+                        {videoFile
+                          ? videoFile.name
+                          : '클릭하거나 드래그하여 업로드하세요.'}
+                      </p>
+                      <p className={`text-sm mt-2 ${theme.subText}`}>
+                        MP4, MOV, WEBM 등 비디오 파일을 업로드할 수 있습니다.
+                      </p>
+                    </div>
                   </label>
                 </div>
 
-                <div className="mb-14 mt-12">
-                  <h3 className="text-xl font-bold mb-6">자막 스타일 선택</h3>
+                {videoUrl && (
+                  <div className="mt-8 rounded-[28px] overflow-hidden bg-black border border-gray-800">
+                    <div className="h-[360px]">
+                      <Player
+                        url={videoUrl}
+                        playing={playing}
+                        setPlaying={setPlaying}
+                        onDuration={setDuration}
+                        onProgress={setPlayed}
+                        playerRef={playerRef}
+                      />
+                    </div>
+                  </div>
+                )}
 
-                  {/* 1층: 일반 / 문어체 / 구어체 3버튼 구조 */}
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    {/* 일반 버튼 */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-black mb-4">자막 스타일 선택</h3>
+
+                  <div className="grid grid-cols-3 gap-3">
                     <button
-                      type="button"
                       onClick={() => {
                         setSubtitleType('general');
                         setSelectedDomain('general');
                       }}
-                      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
-                        subtitleType === 'general' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
+                      className={`p-5 rounded-[24px] border-2 transition-all font-bold ${
+                        subtitleType === 'general'
+                          ? 'bg-brand-purple border-brand-purple text-white'
+                          : 'bg-white border-transparent text-black'
                       }`}
                     >
                       일반
                     </button>
 
-                    {/* 문어체 버튼 */}
                     <button
-                      type="button"
                       onClick={() => {
                         setSubtitleType('formal');
                         setSelectedDomain('social_news');
                       }}
-                      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
-                        subtitleType === 'formal' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
+                      className={`p-5 rounded-[24px] border-2 transition-all font-bold ${
+                        subtitleType === 'formal'
+                          ? 'bg-brand-purple border-brand-purple text-white'
+                          : 'bg-white border-transparent text-black'
                       }`}
                     >
                       문어체
                     </button>
 
-                    {/* 구어체 버튼 */}
                     <button
-                      type="button"
                       onClick={() => {
                         setSubtitleType('casual');
                         setSelectedDomain('ent');
                       }}
-                      className={`p-5 rounded-[24px] border-2 transition-all font-bold text-black ${
-                        subtitleType === 'casual' ? 'bg-brand-purple border-brand-purple' : 'bg-white border-transparent'
+                      className={`p-5 rounded-[24px] border-2 transition-all font-bold ${
+                        subtitleType === 'casual'
+                          ? 'bg-brand-purple border-brand-purple text-white'
+                          : 'bg-white border-transparent text-black'
                       }`}
                     >
                       구어체
                     </button>
                   </div>
 
-                  {/* 2층: 세부 도메인 칩 (일반이 아닐 때만 노출) */}
                   {subtitleType && domainMap[subtitleType].length > 0 && (
-                    <div className="flex justify-center gap-3 p-4 bg-slate-100 rounded-2xl animate-fade-in">
+                    <div className="flex flex-wrap gap-3 mt-4">
                       {domainMap[subtitleType].map((option) => (
                         <button
                           key={option.id}
-                          type="button"
                           onClick={() => setSelectedDomain(option.id)}
                           className={`px-6 py-2 rounded-full border-2 font-bold transition-all ${
-                            selectedDomain === option.id 
-                            ? 'bg-white text-brand-purple border-brand-purple' 
-                            : 'bg-transparent text-slate-400 border-slate-200'
+                            selectedDomain === option.id
+                              ? 'bg-white text-brand-purple border-brand-purple'
+                              : 'bg-transparent text-slate-400 border-slate-200'
                           }`}
                         >
                           {option.name}
@@ -584,16 +576,15 @@ function App() {
                   )}
                 </div>
 
-                <div className="mb-14">
-                  <h3 className="text-xl font-bold mb-6">
+                <div className="mt-8">
+                  <h3 className="text-lg font-black mb-4">
                     자막 렌더링 방식 선택
                   </h3>
 
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-2 gap-4">
                     {renderOptions.map((option) => (
                       <button
                         key={option.id}
-                        type="button"
                         onClick={() => setRenderEngine(option.id)}
                         className={`p-7 rounded-[28px] border-2 transition-all flex items-center gap-5 text-left ${
                           renderEngine === option.id
@@ -604,43 +595,22 @@ function App() {
                         }`}
                       >
                         <div
-                          className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
                             renderEngine === option.id
-                              ? 'bg-white border-white'
-                              : isDark
-                              ? 'border-gray-700'
-                              : 'border-slate-300'
+                              ? 'border-white bg-white text-brand-purple'
+                              : 'border-slate-400'
                           }`}
                         >
-                          {renderEngine === option.id && (
-                            <Check
-                              size={18}
-                              className="text-brand-purple"
-                              strokeWidth={3}
-                            />
-                          )}
+                          {renderEngine === option.id && <Check size={18} />}
                         </div>
 
                         <div>
+                          <p className="text-lg font-black">{option.name}</p>
                           <p
-                            className={`font-bold text-lg ${
+                            className={`text-sm mt-1 ${
                               renderEngine === option.id
-                                ? 'text-white'
-                                : isDark
-                                ? 'text-gray-400'
-                                : 'text-slate-600'
-                            }`}
-                          >
-                            {option.name}
-                          </p>
-
-                          <p
-                            className={`text-[11px] font-black tracking-widest mt-1 uppercase ${
-                              renderEngine === option.id
-                                ? 'text-white/70'
-                                : isDark
-                                ? 'text-gray-600'
-                                : 'text-slate-400'
+                                ? 'text-white/80'
+                                : theme.subText
                             }`}
                           >
                             {option.desc}
@@ -654,7 +624,7 @@ function App() {
                 <button
                   onClick={handleStartAI}
                   disabled={!videoFile}
-                  className={`w-full py-6 rounded-[28px] font-black text-lg shadow-2xl transition-all ${
+                  className={`w-full mt-8 py-6 rounded-[28px] font-black text-lg shadow-2xl transition-all ${
                     videoFile
                       ? 'bg-brand-purple text-white hover:bg-brand-purple-light'
                       : 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -666,14 +636,11 @@ function App() {
               </div>
             </div>
           ) : isDone ? (
-            /* 1. 메인 컨테이너: flex-row로 좌우 배치, h-full로 높이 고정 */
             <div className="flex flex-1 flex-row overflow-hidden h-full bg-black/5">
-
-              {/* 2. 왼쪽: 영상 플레이어 영역 */}
               <section className="flex-1 flex flex-col p-8 justify-center min-w-0 h-full relative">
-                <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
+                <div className="relative w-full max-w-5xl mx-auto h-[70vh] min-h-[360px] rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
                   <Player
-                    url={videoUrl}
+                    url={previewVideoUrl}
                     isDark={isDark}
                     playing={playing}
                     setPlaying={setPlaying}
@@ -684,66 +651,103 @@ function App() {
                   />
                 </div>
 
-                {/* 📍 복구된 자막 분포 시각화 바 (독립적인 오버레이 형태) */}
                 <div className="w-full max-w-5xl mx-auto mt-6 h-3 bg-white/10 rounded-full relative overflow-hidden shadow-inner border border-white/5">
-                  {localSegments.map((seg) => (
-                    <div
-                      key={`timeline-${seg.id}`}
-                      className="absolute h-full bg-brand-purple/50 border-x border-black/10"
-                      style={{
-                        left: `${(seg.start / duration) * 100}%`,
-                        width: `${((seg.end - seg.start) / duration) * 100}%`,
-                      }}
-                    />
-                  ))}
-                  {/* 현재 재생 시점 표시 마커 (점 형태) */}
-                  <div 
+                  {localSegments.map((seg) => {
+                    const start = Number(seg.start || 0);
+                    const end = Number(seg.end || start);
+                    const left = Math.max(0, Math.min(100, (start / safeDuration) * 100));
+                    const width = Math.max(
+                      0,
+                      Math.min(100 - left, ((end - start) / safeDuration) * 100)
+                    );
+
+                    return (
+                      <div
+                        key={`timeline-${seg.id}`}
+                        className="absolute h-full bg-brand-purple/50 border-x border-black/10"
+                        style={{
+                          left: `${left}%`,
+                          width: `${width}%`,
+                        }}
+                      />
+                    );
+                  })}
+
+                  <div
                     className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_12px_rgba(255,255,255,1)] z-50 rounded-full"
-                    style={{ left: `${(played / (played > 1 ? duration : 1)) * 100}%`, transition: 'left 0.1s linear' }}
+                    style={{
+                      left: `${Math.max(0, Math.min(100, played * 100))}%`,
+                      transition: 'left 0.1s linear',
+                    }}
                   />
                 </div>
+
+                {resultVideoUrl && (
+                  <p className="w-full max-w-5xl mx-auto mt-4 text-sm text-slate-400">
+                    현재 미리보기는 백엔드에서 생성된 최종 자막 영상입니다.
+                  </p>
+                )}
               </section>
 
-              {/* 4. 오른쪽: 자막 편집창 (스크롤 가능하게 고정) */}
               <aside
-                className={`w-[420px] border-l shadow-2xl transition-all duration-500 ${theme.sidebar} flex flex-col h-full shrink-0`}
+                className={`w-[440px] shrink-0 border-l h-full flex flex-col ${
+                  isDark
+                    ? 'bg-[#11131F] border-gray-800/50'
+                    : 'bg-white border-gray-200'
+                }`}
               >
-                <div className="p-5 border-b border-gray-800/30 bg-black/5">
-                  <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${theme.searchBar}`}>
-                    <Search size={16} className="text-gray-500" />
+                <div className="p-5 border-b border-gray-800/30">
+                  <div
+                    className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${theme.searchBar}`}
+                  >
+                    <Search size={18} className="text-slate-400" />
                     <input
-                      type="text"
-                      placeholder="자막 검색..."
-                      className="bg-transparent outline-none text-sm w-full font-medium"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="자막 검색"
+                      className="bg-transparent outline-none w-full text-sm"
                     />
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <Editor
-                    segments={filteredSegments}
-                    isDark={isDark}
-                    onUpdate={(id, txt) =>
-                      setLocalSegments((prev) =>
-                        prev.map((s) =>
-                          s.id === id ? { ...s, corrected: txt } : s
-                        )
+                <Editor
+                  segments={filteredSegments}
+                  isDark={isDark}
+                  onUpdate={(id, txt) =>
+                    setLocalSegments((prev) =>
+                      prev.map((s) =>
+                        s.id === id ? { ...s, corrected: txt } : s
                       )
-                    }
-                  />
-                </div>
+                    )
+                  }
+                />
               </aside>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <Status
-                progress={Number(jobStatus.progress || 0)}
-                jobStatus={jobStatus}
-                isDark={isDark}
-                theme={theme}
-              />
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="w-full max-w-3xl">
+                <Status
+                  progress={jobStatus.progress}
+                  jobStatus={jobStatus}
+                  isDark={isDark}
+                />
+
+                {isFailed && (
+                  <div className="mt-6 rounded-3xl bg-red-500/10 border border-red-500/30 p-6 text-red-200">
+                    <p className="font-black mb-2">처리 실패</p>
+                    <p className="text-sm">
+                      {jobStatus.message || '작업 중 오류가 발생했습니다.'}
+                    </p>
+
+                    <button
+                      onClick={() => setJobStatus(initialJobStatus)}
+                      className="mt-5 px-5 py-3 rounded-2xl bg-red-500 text-white font-bold"
+                    >
+                      처음으로 돌아가기
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </main>
