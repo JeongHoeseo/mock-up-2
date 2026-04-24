@@ -179,11 +179,7 @@ function App() {
             return;
           }
 
-          if (
-            status === 'failed' ||
-            status === 'error' ||
-            step === 'failed'
-          ) {
+          if (status === 'failed' || status === 'error' || step === 'failed') {
             setPolling(false);
 
             setJobStatus((prev) => ({
@@ -505,6 +501,7 @@ function App() {
                         onDuration={setDuration}
                         onProgress={setPlayed}
                         playerRef={playerRef}
+                        objectPosition="center center"
                       />
                     </div>
                   </div>
@@ -637,8 +634,8 @@ function App() {
             </div>
           ) : isDone ? (
             <div className="flex flex-1 flex-row overflow-hidden h-full bg-black/5">
-              <section className="flex-1 flex flex-col p-8 justify-center min-w-0 h-full relative">
-                <div className="relative w-full max-w-5xl mx-auto h-[70vh] min-h-[360px] rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
+              <section className="flex-1 flex flex-col p-8 justify-start items-start min-w-0 h-full relative">
+                <div className="relative w-full max-w-5xl h-[70vh] min-h-[360px] rounded-3xl overflow-hidden bg-black shadow-2xl group border border-gray-800">
                   <Player
                     url={previewVideoUrl}
                     isDark={isDark}
@@ -648,17 +645,24 @@ function App() {
                     onProgress={setPlayed}
                     playerRef={playerRef}
                     segments={localSegments}
+                    objectPosition="left top"
                   />
                 </div>
 
-                <div className="w-full max-w-5xl mx-auto mt-6 h-3 bg-white/10 rounded-full relative overflow-hidden shadow-inner border border-white/5">
+                <div className="w-full max-w-5xl mt-6 h-3 bg-white/10 rounded-full relative overflow-hidden shadow-inner border border-white/5">
                   {localSegments.map((seg) => {
                     const start = Number(seg.start || 0);
                     const end = Number(seg.end || start);
-                    const left = Math.max(0, Math.min(100, (start / safeDuration) * 100));
+                    const left = Math.max(
+                      0,
+                      Math.min(100, (start / safeDuration) * 100)
+                    );
                     const width = Math.max(
                       0,
-                      Math.min(100 - left, ((end - start) / safeDuration) * 100)
+                      Math.min(
+                        100 - left,
+                        ((end - start) / safeDuration) * 100
+                      )
                     );
 
                     return (
@@ -683,7 +687,7 @@ function App() {
                 </div>
 
                 {resultVideoUrl && (
-                  <p className="w-full max-w-5xl mx-auto mt-4 text-sm text-slate-400">
+                  <p className="w-full max-w-5xl mt-4 text-sm text-slate-400">
                     현재 미리보기는 백엔드에서 생성된 최종 자막 영상입니다.
                   </p>
                 )}
